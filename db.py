@@ -38,7 +38,8 @@ def init_db():
           pdf_path TEXT NOT NULL,
           created_at TEXT NOT NULL,
           trailer_no TEXT,
-          starred INTEGER DEFAULT 0
+          starred INTEGER DEFAULT 0,
+          notes TEXT DEFAULT ''
         )
         """)
 
@@ -49,6 +50,8 @@ def init_db():
                 con.execute("ALTER TABLE orders ADD COLUMN trailer_no TEXT")
             if "starred" not in cols:
                 con.execute("ALTER TABLE orders ADD COLUMN starred INTEGER DEFAULT 0")
+            if "notes" not in cols:
+                con.execute("ALTER TABLE orders ADD COLUMN notes TEXT DEFAULT ''")
         except Exception:
             pass
 
@@ -145,7 +148,6 @@ def record_check(link_id: int, url: str, status: dict):
         now = utc_now()
 
         # Store a compact status string (normalized status code + label + optional time)
-        # We intentionally do NOT store the raw Spanish phrases for display.
         compact = None
         code = status.get("status") or ""
         label = status.get("label") or ""
@@ -194,6 +196,13 @@ def toggle_star(order_no: str) -> int:
         return new_val
 
 
+def update_notes(order_no: str, notes: str) -> bool:
+    """Save a note for an order. Returns True if the order was found."""
+    with connect() as con:
+        cur = con.execute("UPDATE orders SET notes=? WHERE order_no=?", (notes, order_no))
+        return cur.rowcount > 0
+
+
 def delete_order(order_no: str) -> dict:
     """Delete an order and its related rows.
 
@@ -216,7 +225,7 @@ def list_orders() -> list[dict]:
     with connect() as con:
         cur = con.execute(
             """
-            SELECT o.order_no, o.pdf_path, o.created_at, o.trailer_no, o.starred,
+            SELECT o.order_no, o.pdf_path, o.created_at, o.trailer_no, o.starred, o.notes,
                    l.url, l.last_checked, l.last_is_clear, l.last_status, l.last_event_ts
             FROM orders o
             LEFT JOIN links l ON l.order_id = o.id
@@ -227,7 +236,7 @@ def list_orders() -> list[dict]:
 
     # group by order
     by = {}
-    for order_no, pdf_path, created_at, trailer_no, starred, url, last_checked, last_is_clear, last_status, last_event_ts in rows:
+    for order_no, pdf_path, created_at, trailer_no, starred, notes, url, last_checked, last_is_clear, last_status, last_event_ts in rows:
         o = by.setdefault(order_no, {
             "order_no": order_no,
             "pdf_path": pdf_path,
@@ -235,6 +244,7 @@ def list_orders() -> list[dict]:
             "created_at_raw": created_at,
             "trailer_no": trailer_no,
             "starred": int(starred or 0),
+            "notes": notes or "",
             "links": [],
         })
         if url:
@@ -249,7 +259,6 @@ def list_orders() -> list[dict]:
 
     # Sort links by last_checked desc so the dashboard shows the most recent status
     def key(l):
-        # normalize to avoid ordering issues (strip accidental whitespace/newlines)
         lc = (l.get("last_checked") or "").strip()
         return (bool(l.get("last_checked")), lc)
 
