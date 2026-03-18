@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "notes": "Map Spanish status phrases found on DODA pages to normalized statuses.",
+  "priorities": [
+    "CLEARED",
+    "MEX_RED_DONE",
+    "MEX_RED",
+    "NOT_PRESENTED",
+    "UNKNOWN"
+  ],
+  "phrases": [
+    {
+      "phrase": "DESADUANAMIENTO LIBRE",
+      "status": "CLEARED",
+      "label": "Crossed MX Customs",
+      "cleared": true,
+      "severity": "ok"
+    },
+    {
+      "phrase": "RECONOCIMIENTO ADUANERO",
+      "status": "MEX_RED",
+      "label": "Rojo Mexicano",
+      "cleared": false,
+      "severity": "warn"
+    },
+    {
+      "phrase": "RECONOCIMIENTO ADUANERO CONCLUIDO",
+      "status": "MEX_RED_DONE",
+      "label": "Rojo Mexicano / Liberado",
+      "cleared": false,
+      "severity": "info"
+    },
+    {
+      "phrase": "DODA no presentado al Mecanismo de Seleccion Automatizado",
+      "status": "NOT_PRESENTED",
+      "label": "Pending Crossing",
+      "cleared": false,
+      "severity": "warn"
+    }
+  ]
+}
