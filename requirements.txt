@@ -1,0 +1,10 @@
+PyMuPDF==1.24.14
+opencv-python-headless==4.9.0.80
+numpy<2
+watchdog==4.0.1
+Flask==3.0.3
+requests==2.32.3
+urllib3==2.2.3
+beautifulsoup4==4.12.3
+tzdata==2025.3
+gunicorn==22.0.0
