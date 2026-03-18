@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import time
 from pathlib import Path
@@ -556,7 +557,7 @@ var T = {
     col_order: 'Orden', col_trailer: 'Remolque / Placas', col_status: 'Estatus',
     col_notes: 'Notas', col_actions: 'Acciones',
     badge_verde: 'VERDE / LIBERADO', badge_rojo: 'ROJO MEXICANO',
-    badge_pend: 'PENDIENTE', badge_insp: '\uD83D\uDEA8 Inspeccionado',
+    badge_pend: 'PENDIENTE', badge_insp: '\U0001F6A8 Inspeccionado',
     empty_title: '\u00a1Let\'s Go Kill It!',
     empty_sub: 'No hay DODAs en seguimiento \u2014 sube uno arriba.',
     no_match: 'Ninguna orden coincide con los filtros.',
