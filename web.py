@@ -605,7 +605,7 @@ var lang = localStorage.getItem('dodaLang') || 'es';
 
 function fmt(tpl) {
   var args = Array.prototype.slice.call(arguments, 1);
-  return tpl.replace(/\{(\d+)\}/g, function(_, i){ return args[i] !== undefined ? args[i] : ''; });
+  return tpl.replace(/\\{(\\d+)\\}/g, function(_, i){ return args[i] !== undefined ? args[i] : ''; });
 }
 
 function applyLang(l) {
