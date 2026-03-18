@@ -1,0 +1,7 @@
+.venv/
+build/
+dist/
+DODA-Tracker-win/
+DODA-Tracker-win.zip
+__pycache__/
+*.pyc
