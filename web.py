@@ -23,343 +23,924 @@ logger = logging.getLogger(__name__)
 
 TEMPLATE = """
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DODA Dashboard</title>
+  <title>ALS DODA Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#0f172a;
-      --muted:#64748b;
-      --line:#e2e8f0;
-      --link:#2563eb;
-      --shadow:0 10px 30px rgba(2,6,23,.08);
-
-      --okBg:rgba(34,197,94,.12);
-      --okFg:#166534;
-      --okBd:rgba(34,197,94,.28);
-
-      --warnBg:rgba(239,68,68,.12);
-      --warnFg:#991b1b;
-      --warnBd:rgba(239,68,68,.28);
-
-      --unkBg:rgba(148,163,184,.14);
-      --unkFg:#334155;
-      --unkBd:rgba(148,163,184,.30);
+    :root {
+      --bg:         #0A0F1E;
+      --card:       #0D1B2A;
+      --accent:     #0066CC;
+      --highlight:  #00AAFF;
+      --green:      #00C853;
+      --red:        #FF3B30;
+      --amber:      #FFB300;
+      --text:       #FFFFFF;
+      --muted:      #A0AEC0;
+      --border:     rgba(0, 170, 255, 0.12);
+      --border-hi:  rgba(0, 170, 255, 0.35);
+      --shadow:     0 8px 32px rgba(0, 0, 0, 0.45);
     }
 
-    [data-theme="dark"]{
-      --bg:#0b1220;
-      --card:#0f1b33;
-      --text:#e5e7eb;
-      --muted:#9ca3af;
-      --line:#22304e;
-      --link:#60a5fa;
-      --shadow:0 10px 30px rgba(0,0,0,.35);
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      --okBg:rgba(34,197,94,.18);
-      --okFg:#86efac;
-      --okBd:rgba(34,197,94,.28);
-
-      --warnBg:rgba(239,68,68,.18);
-      --warnFg:#fca5a5;
-      --warnBd:rgba(239,68,68,.28);
-
-      --unkBg:rgba(148,163,184,.14);
-      --unkFg:#cbd5e1;
-      --unkBd:rgba(148,163,184,.25);
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
     }
 
-    *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text);}
-    .wrap{max-width:1100px;margin:0 auto;padding:22px;}
-    h1{font-size:18px;margin:0 0 6px;font-weight:800;letter-spacing:-.01em;}
-    .muted{color:var(--muted)}
-    .small{font-size:12px;color:var(--muted)}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0;box-shadow:var(--shadow);overflow:hidden;}
+    /* ── SCROLLBAR ─────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,170,255,.25); border-radius: 3px; }
 
-    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)}
-    .toolbarLeft{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .toolbarRight{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-
-    .select{border:1px solid var(--line);background:transparent;color:var(--text);padding:8px 10px;border-radius:12px;outline:none}
-
-    .search{border:1px solid var(--line);background:transparent;color:var(--text);padding:8px 10px;border-radius:12px;min-width:220px;outline:none}
-    .search::placeholder{color:var(--muted)}
-
-    table{width:100%;border-collapse:separate;border-spacing:0;}
-    th,td{padding:12px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
-    thead th{position:sticky;top:0;background:var(--card);z-index:2}
-    th{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;text-align:left;font-weight:700;}
-    tr:last-child td{border-bottom:none;}
-
-    .order{font-weight:800;font-size:14px;}
-
-    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-weight:800;font-size:11px;border:1px solid transparent;white-space:nowrap}
-    .b-ok{background:var(--okBg); color:var(--okFg); border-color:var(--okBd)}
-    .b-warn{background:var(--warnBg); color:var(--warnFg); border-color:var(--warnBd)}
-    .b-unk{background:var(--unkBg); color:var(--unkFg); border-color:var(--unkBd)}
-
-    .statusText{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.3}
-
-    .topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;}
-
-    .iconBtn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:36px;
-      height:36px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:transparent;
-      box-shadow:none;
-      cursor:pointer;
-      color:var(--muted);
+    /* ── HEADER ────────────────────────────────── */
+    .header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
     }
-    .iconBtn:hover{border-color:rgba(37,99,235,.35)}
-    .icon{width:18px;height:18px;fill:var(--link)}
-    .iconDanger .icon{fill:#ef4444}
 
-    form{margin:0}
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-    .toast{padding:8px 10px;border-radius:12px;border:1px solid var(--line);color:var(--muted);font-size:12px}
+    .brand-badge {
+      background: var(--accent);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
 
-    /* Upload panel */
-    .uploadPanel{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:16px 18px;
-      box-shadow:var(--shadow);
-      margin-bottom:14px;
-      display:flex;
-      gap:12px;
-      align-items:flex-end;
-      flex-wrap:wrap;
+    .brand-name {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: var(--text);
     }
-    .uploadPanel label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600}
-    .uploadPanel input[type=text]{
-      border:1px solid var(--line);
-      background:transparent;
-      color:var(--text);
-      padding:8px 10px;
-      border-radius:12px;
-      outline:none;
-      min-width:160px;
+
+    .brand-name span { color: var(--highlight); }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
-    .uploadPanel input[type=file]{
-      border:1px solid var(--line);
-      background:transparent;
-      color:var(--text);
-      padding:7px 10px;
-      border-radius:12px;
-      font-size:12px;
+
+    .refresh-meta {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
     }
-    .uploadBtn{
-      padding:8px 18px;
-      border-radius:12px;
-      border:none;
-      background:var(--link);
-      color:#fff;
-      font-size:13px;
-      font-weight:700;
-      cursor:pointer;
-      white-space:nowrap;
+
+    /* ── MAIN WRAPPER ──────────────────────────── */
+    .main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
     }
-    .uploadBtn:hover{opacity:.88}
-    .flashOk{background:var(--okBg);color:var(--okFg);border:1px solid var(--okBd);border-radius:12px;padding:8px 14px;font-size:13px;margin-bottom:12px}
-    .flashErr{background:var(--warnBg);color:var(--warnFg);border:1px solid var(--warnBd);border-radius:12px;padding:8px 14px;font-size:13px;margin-bottom:12px}
+
+    /* ── FLASH MESSAGES ────────────────────────── */
+    .flash {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .flash-ok  { background: rgba(0,200,83,.12);  border: 1px solid rgba(0,200,83,.3);  color: #4ade80; }
+    .flash-err { background: rgba(255,59,48,.12); border: 1px solid rgba(255,59,48,.3); color: #ff7068; }
+
+    /* ── DROP ZONE ─────────────────────────────── */
+    .drop-zone-wrapper { margin-bottom: 24px; }
+
+    .drop-zone {
+      border: 2px dashed var(--border-hi);
+      border-radius: 8px;
+      padding: 56px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      background: rgba(0, 102, 204, 0.04);
+      text-align: center;
+      user-select: none;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--highlight);
+      background: rgba(0, 170, 255, 0.07);
+    }
+
+    .drop-icon {
+      width: 56px;
+      height: 56px;
+      color: var(--highlight);
+      opacity: 0.75;
+    }
+
+    .drop-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .drop-browse { color: var(--highlight); font-weight: 700; }
+
+    .drop-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── UPLOAD SPLIT ──────────────────────────── */
+    .upload-split {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .upload-split.active { display: grid; }
+
+    /* Form panel */
+    .form-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-panel-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--highlight);
+      font-weight: 500;
+      background: rgba(0, 170, 255, 0.1);
+      border: 1px solid rgba(0, 170, 255, 0.2);
+      padding: 6px 10px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .form-input, .form-select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .form-input::placeholder { color: var(--muted); opacity: 0.7; }
+    .form-input:focus, .form-select:focus { border-color: var(--highlight); }
+    .form-input.err { border-color: var(--red); }
+
+    .form-select { cursor: pointer; }
+    .form-select option { background: #1a2a3a; color: var(--text); }
+
+    .form-error {
+      font-size: 11px;
+      color: var(--red);
+      display: none;
+      margin-top: 2px;
+    }
+    .form-error.show { display: block; }
+
+    .id-row {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 8px;
+    }
+
+    .id-row .form-select { width: auto; }
+
+    .submit-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      width: 100%;
+      letter-spacing: 0.02em;
+    }
+
+    .submit-btn:hover  { background: var(--highlight); }
+    .submit-btn:active { transform: scale(0.98); }
+
+    .change-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--muted);
+      padding: 9px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      width: 100%;
+    }
+
+    .change-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* PDF preview panel */
+    .preview-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 520px;
+    }
+
+    .preview-panel iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      border: none;
+      display: block;
+    }
+
+    /* ── DASHBOARD CARD ────────────────────────── */
+    .dash-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── TOOLBAR ───────────────────────────────── */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .tr { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      color: var(--muted);
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      pointer-events: none;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--highlight);
+      color: var(--highlight);
+      background: rgba(0, 170, 255, 0.08);
+    }
+
+    .icon-btn-del:hover {
+      border-color: var(--red);
+      color: var(--red);
+      background: rgba(255, 59, 48, 0.08);
+    }
+
+    .sort-sel, .search-inp {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .sort-sel { cursor: pointer; }
+    .sort-sel option { background: #1a2a3a; }
+    .search-inp { min-width: 240px; }
+    .search-inp::placeholder { color: var(--muted); opacity: 0.7; }
+    .search-inp:focus { border-color: var(--highlight); }
+
+    /* ── TABLE ─────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: left;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover { background: rgba(0, 170, 255, 0.04); }
+
+    /* Left status stripe via box-shadow */
+    tbody tr.st-verde   { box-shadow: inset 4px 0 0 var(--green); }
+    tbody tr.st-rojo    { box-shadow: inset 4px 0 0 var(--red); }
+    tbody tr.st-pending { box-shadow: inset 4px 0 0 var(--amber); }
+
+    td { padding: 14px 16px; vertical-align: middle; }
+
+    .order-no {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .trailer-no {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── STATUS BADGES ─────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .badge::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .b-verde {
+      background: rgba(0, 200, 83, 0.14);
+      color: #3ddc84;
+      border: 1px solid rgba(0, 200, 83, 0.32);
+    }
+
+    .b-rojo {
+      background: rgba(255, 59, 48, 0.14);
+      color: #ff7068;
+      border: 1px solid rgba(255, 59, 48, 0.32);
+    }
+
+    .b-pending {
+      background: rgba(255, 179, 0, 0.14);
+      color: #fbbf24;
+      border: 1px solid rgba(255, 179, 0, 0.32);
+    }
+
+    .status-detail {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* ── ACTIONS ───────────────────────────────── */
+    .actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+
+    /* ── EMPTY STATE ───────────────────────────── */
+    .empty {
+      padding: 56px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .empty p { font-size: 14px; }
+
+    /* ── RESPONSIVE ────────────────────────────── */
+    @media (max-width: 900px) {
+      .upload-split.active { grid-template-columns: 1fr; }
+      .preview-panel { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .header { padding: 0 16px; }
+      .main { padding: 16px 12px 40px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .tl, .tr { justify-content: space-between; }
+      .search-inp { min-width: unset; width: 100%; }
+      thead th, td { padding: 10px 12px; }
+      .brand-name { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div>
-        <h1>DODA Dashboard</h1>
-        <div class="muted">Auto-checks every 15 minutes · Manual refresh limited to every 5 minutes</div>
-      </div>
-    </div>
 
+  <!-- ════════════ HEADER ════════════ -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-badge">ALS</div>
+      <div class="brand-name">DODA <span>Tracker</span></div>
+    </div>
+    <div class="header-right">
+      <span id="refreshMeta" class="refresh-meta"></span>
+    </div>
+  </header>
+
+  <!-- ════════════ MAIN ════════════ -->
+  <main class="main">
+
+    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}
-        <div class="{{ 'flashOk' if cat == 'success' else 'flashErr' }}">{{ msg }}</div>
+        <div class="flash {{ 'flash-ok' if cat == 'success' else 'flash-err' }}">
+          {% if cat == 'success' %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+          {% else %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          {% endif %}
+          {{ msg }}
+        </div>
       {% endfor %}
     {% endwith %}
 
-    <!-- Upload panel -->
-    <div class="uploadPanel">
-      <div>
-        <label for="order_no">Order Number</label>
-        <input type="text" id="order_no" name="order_no" form="uploadForm" placeholder="e.g. ORD-12345" required />
+    <!-- ════ DROP ZONE (hidden after file picked) ════ -->
+    <div class="drop-zone-wrapper" id="dropWrapper">
+      <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Upload PDF">
+        <!-- Upload cloud icon -->
+        <svg class="drop-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="32" cy="32" r="30" fill="rgba(0,170,255,0.08)" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M22 38c-3.31 0-6-2.69-6-6 0-3.09 2.33-5.64 5.35-5.97C22.19 23.18 24.9 21 28 21c1.93 0 3.68.79 4.95 2.05A8 8 0 0148 30c0 4.42-3.58 8-8 8H22z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M32 37v10M28 43l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+
+        <div class="drop-title">
+          Drag &amp; Drop DODA PDF here or <span class="drop-browse">click to browse</span>
+        </div>
+        <div class="drop-sub">PDF files only &middot; QR codes extracted automatically</div>
+        <input type="file" id="fileInput" accept=".pdf" style="display:none" tabindex="-1" />
       </div>
-      <div>
-        <label for="pdf_file">DODA PDF</label>
-        <input type="file" id="pdf_file" name="pdf_file" form="uploadForm" accept=".pdf" required />
-      </div>
-      <form id="uploadForm" method="post" action="{{ url_for('upload_pdf') }}" enctype="multipart/form-data">
-        <button class="uploadBtn" type="submit">Upload PDF</button>
-      </form>
     </div>
 
-    <div class="card">
+    <!-- ════ UPLOAD SPLIT (shown after file picked) ════ -->
+    <div class="upload-split" id="uploadSplit">
+
+      <!-- LEFT: form -->
+      <div class="form-panel">
+        <div class="form-panel-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--highlight)">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6"/>
+          </svg>
+          Upload DODA PDF
+        </div>
+
+        <div class="file-chip" id="fileChip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6"/>
+          </svg>
+          <span id="fileName"></span>
+        </div>
+
+        <form id="uploadForm" method="post" action="{{ url_for('upload_pdf') }}" enctype="multipart/form-data">
+          <!-- Hidden real file input -->
+          <input type="file" id="realFileInput" name="pdf_file" accept=".pdf" style="display:none" tabindex="-1" />
+
+          <!-- Order Number -->
+          <div class="form-group">
+            <label class="form-label" for="order_no">Order Number</label>
+            <input
+              type="text"
+              id="order_no"
+              name="order_no"
+              class="form-input"
+              placeholder="6-digit order number"
+              maxlength="6"
+              inputmode="numeric"
+              autocomplete="off"
+            />
+            <span class="form-error" id="orderErr">Must be exactly 6 digits (numbers only).</span>
+          </div>
+
+          <!-- Identifier -->
+          <div class="form-group">
+            <label class="form-label">Identifier</label>
+            <div class="id-row">
+              <select name="identifier_type" id="idType" class="form-select">
+                <option value="trailer">Trailer</option>
+                <option value="plates">Plates</option>
+              </select>
+              <input
+                type="text"
+                name="identifier_value"
+                id="idValue"
+                class="form-input"
+                placeholder="Enter value"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn">Submit</button>
+        </form>
+
+        <button type="button" class="change-btn" id="changeBtn">&#8629; Change file</button>
+      </div>
+
+      <!-- RIGHT: PDF preview -->
+      <div class="preview-panel">
+        <iframe id="pdfFrame" title="PDF Preview"></iframe>
+      </div>
+
+    </div>
+
+    <!-- ════ DASHBOARD TABLE ════ -->
+    <div class="dash-card">
+
+      <!-- Toolbar -->
       <div class="toolbar">
-        <div class="toolbarLeft">
-          <form method="post" action="{{ url_for('refresh_now') }}">
-            <button class="iconBtn" type="submit" title="Refresh now" aria-label="Refresh now">
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17.65 6.35A7.95 7.95 0 0012 4V1L7 6l5 5V7a5 5 0 11-4.9 6h-2.02A7 7 0 1017.65 6.35z"></path>
+        <div class="tl">
+          <form method="post" action="{{ url_for('refresh_now') }}" style="margin:0">
+            <button class="icon-btn" type="submit" title="Refresh status now" aria-label="Refresh now">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.65 6.35A7.95 7.95 0 0012 4V1L7 6l5 5V7a5 5 0 11-4.9 6h-2.02A7 7 0 1017.65 6.35z"/>
               </svg>
             </button>
           </form>
-
-          <label class="small" for="sort" style="margin-left:6px">Sort</label>
-          <select id="sort" class="select">
-            <option value="PRIORITY" selected>Priority (Star + Pending)</option>
+          <select id="sort" class="sort-sel" aria-label="Sort orders">
+            <option value="PRIORITY" selected>Priority</option>
             <option value="EVENT_DESC">Event time (latest)</option>
             <option value="ADDED_DESC">Date added (latest)</option>
-            <option value="ORDER_ASC">Order (A→Z)</option>
-            <option value="TRAILER_ASC">Trailer (A→Z)</option>
+            <option value="ORDER_ASC">Order (A&rarr;Z)</option>
+            <option value="TRAILER_ASC">Trailer (A&rarr;Z)</option>
           </select>
         </div>
-        <div class="toolbarRight">
-          <input id="q" class="search" placeholder="Search order or trailer…" />
-          <div id="refreshMeta" class="toast"></div>
-          <button id="themeBtn" class="iconBtn" title="Toggle dark mode" aria-label="Toggle dark mode">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M21.64 13a1 1 0 00-1.05-.14A8 8 0 1111.14 3.41a1 1 0 00-.14-1.05 1 1 0 00-1.11-.41A10 10 0 1022.05 14.1a1 1 0 00-.41-1.1z"></path>
-            </svg>
-          </button>
+        <div class="tr">
+          <input id="q" class="search-inp" placeholder="Search order or trailer&hellip;" aria-label="Search" />
         </div>
       </div>
 
+      <!-- Table -->
       <table id="t">
         <thead>
           <tr>
-            <th style="width:170px">Order</th>
-            <th style="width:140px">Trailer</th>
-            <th style="width:280px">Status</th>
-            <th style="width:100px"></th>
+            <th style="width:48px"></th>
+            <th style="width:140px">Order</th>
+            <th style="width:160px">Trailer / Plates</th>
+            <th>Status</th>
+            <th style="width:100px; text-align:right">Actions</th>
           </tr>
         </thead>
         <tbody id="tbody">
+
           {% for o in orders %}
-            {% set last_checked = 'never' %}
-            {% set any_clear = false %}
             {% set last_status = '' %}
+            {% set last_code = '' %}
             {% set last_label = '' %}
+            {% set last_crossed = '' %}
+            {% set any_clear = false %}
+
             {% if o.links|length > 0 %}
-              {% set last_checked = (o.links[0].last_checked or 'never') %}
               {% set last_status = (o.links[0].last_status or '') %}
-              {% set parts = last_status.split('|') if '|' in last_status else [last_status] %}
-              {% set last_code = (parts[0].strip() if parts|length > 0 else '') %}
-              {% set last_label = (parts[1].strip() if parts|length > 1 else last_status) %}
-              {% set last_crossed = (parts[2].strip() if parts|length > 2 else '') %}
+              {% if '|' in last_status %}
+                {% set parts = last_status.split('|') %}
+                {% set last_code   = parts[0].strip() %}
+                {% set last_label  = parts[1].strip() if parts|length > 1 else '' %}
+                {% set last_crossed = parts[2].strip() if parts|length > 2 else '' %}
+              {% else %}
+                {% set last_code = last_status %}
+              {% endif %}
               {% for l in o.links %}
                 {% if l.is_clear %}{% set any_clear = true %}{% endif %}
               {% endfor %}
             {% endif %}
 
-            {% set status_key = last_code if last_code else 'PENDING' %}
-            {% set event_ts = (o.links[0].last_event_ts if o.links|length > 0 else '') %}
-            <tr class="row" data-status="{{status_key}}" data-order="{{o.order_no}}" data-trailer="{{o.trailer_no or ''}}" data-event="{{event_ts or ''}}" data-added="{{o.created_at_raw or ''}}" data-star="{{o.starred or 0}}">
-              <td>
-                <div style="display:flex; align-items:center; gap:8px">
-                  <form method="post" action="{{ url_for('toggle_star_route', order_no=o.order_no) }}">
-                    <button class="iconBtn" type="submit" title="Star" aria-label="Star" style="width:30px;height:30px;border-radius:10px;">
-                      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="fill:{{ '#f59e0b' if o.starred else 'var(--line)' }}">
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
-                      </svg>
-                    </button>
-                  </form>
-                  <div class="order">{{o.order_no}}</div>
-                </div>
-              </td>
-              <td><div class="order" style="font-weight:700">{{o.trailer_no or '—'}}</div></td>
-              <td>
-                {% if status_key == 'CLEARED' or any_clear %}
-                  <span class="badge b-ok">CROSSED MX CUSTOMS</span>
-                {% elif status_key == 'MEX_RED' %}
-                  <span class="badge b-warn">ROJO MEXICANO</span>
-                {% elif status_key == 'MEX_RED_DONE' %}
-                  <span class="badge b-ok">ROJO / LIBERADO</span>
-                {% else %}
-                  <span class="badge b-unk">PENDING</span>
-                {% endif %}
+            {% set sk = last_code if last_code else 'PENDING' %}
+            {% set et = (o.links[0].last_event_ts if o.links|length > 0 else '') %}
 
-                {% if last_label %}
-                  <div class="statusText">
-                    {{last_label}}{% if last_crossed %} · {{last_crossed}}{% endif %}
-                  </div>
-                {% endif %}
-              </td>
-              <td style="text-align:right">
-                {% set url = (o.links[0].url if o.links|length > 0 else '') %}
-                {% if url %}
-                  <a class="iconBtn" href="{{url}}" target="_blank" title="Open link" aria-label="Open link">
-                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"></path>
-                      <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z"></path>
-                    </svg>
-                  </a>
-                {% endif %}
-                <form style="display:inline" method="post" action="{{ url_for('delete_order_route', order_no=o.order_no) }}" onsubmit="return confirm('Delete order ' + {{o.order_no|tojson}} + '? This will remove it from the dashboard.');">
-                  <button class="iconBtn iconDanger" type="submit" title="Delete" aria-label="Delete order">
-                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM7 9h2v10H7V9z"></path>
+            {% if sk == 'CLEARED' or any_clear %}
+              {% set rc = 'st-verde' %}
+            {% elif sk == 'MEX_RED' %}
+              {% set rc = 'st-rojo' %}
+            {% elif sk == 'MEX_RED_DONE' %}
+              {% set rc = 'st-verde' %}
+            {% else %}
+              {% set rc = 'st-pending' %}
+            {% endif %}
+
+            <tr class="row {{ rc }}"
+                data-status="{{ sk }}"
+                data-order="{{ o.order_no }}"
+                data-trailer="{{ o.trailer_no or '' }}"
+                data-event="{{ et or '' }}"
+                data-added="{{ o.created_at_raw or '' }}"
+                data-star="{{ o.starred or 0 }}">
+
+              <!-- Star -->
+              <td style="padding-left:20px">
+                <form method="post" action="{{ url_for('toggle_star_route', order_no=o.order_no) }}" style="margin:0">
+                  <button class="icon-btn" type="submit" title="{{ 'Unstar' if o.starred else 'Star' }}" aria-label="Toggle star">
+                    <svg viewBox="0 0 24 24" style="fill:{{ '#f59e0b' if o.starred else 'var(--muted)' }}">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                     </svg>
                   </button>
                 </form>
+              </td>
+
+              <!-- Order -->
+              <td><div class="order-no">{{ o.order_no }}</div></td>
+
+              <!-- Trailer / Plates -->
+              <td><div class="trailer-no">{{ o.trailer_no or '&mdash;' }}</div></td>
+
+              <!-- Status badge -->
+              <td>
+                {% if sk == 'CLEARED' or any_clear %}
+                  <span class="badge b-verde">VERDE / LIBERADO</span>
+                {% elif sk == 'MEX_RED' %}
+                  <span class="badge b-rojo">ROJO MEXICANO</span>
+                {% elif sk == 'MEX_RED_DONE' %}
+                  <span class="badge b-verde">ROJO / LIBERADO</span>
+                {% else %}
+                  <span class="badge b-pending">PENDIENTE</span>
+                {% endif %}
+                {% if last_label %}
+                  <div class="status-detail">
+                    {{ last_label }}{% if last_crossed %} &middot; {{ last_crossed }}{% endif %}
+                  </div>
+                {% endif %}
+              </td>
+
+              <!-- Actions -->
+              <td>
+                <div class="actions">
+                  {% set url = (o.links[0].url if o.links|length > 0 else '') %}
+                  {% if url %}
+                    <a class="icon-btn" href="{{ url }}" target="_blank" rel="noopener noreferrer"
+                       title="Open tracking link" aria-label="Open link">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"/>
+                        <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z"/>
+                      </svg>
+                    </a>
+                  {% endif %}
+                  <form style="margin:0" method="post" action="{{ url_for('delete_order_route', order_no=o.order_no) }}"
+                        onsubmit="return confirm('Delete order {{ o.order_no }}?');">
+                    <button class="icon-btn icon-btn-del" type="submit" title="Delete order" aria-label="Delete">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM7 9h2v10H7V9z"/>
+                      </svg>
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
           {% endfor %}
 
           {% if orders|length == 0 %}
-            <tr><td colspan="4" class="muted" style="padding:18px 12px;">No orders yet. Upload a DODA PDF above to get started.</td></tr>
+            <tr>
+              <td colspan="5">
+                <div class="empty">
+                  <div class="empty-icon">&#128230;</div>
+                  <p>No orders yet. Drag &amp; Drop a DODA PDF above to get started.</p>
+                </div>
+              </td>
+            </tr>
           {% endif %}
+
         </tbody>
       </table>
     </div>
-  </div>
+
+  </main>
+
   <script>
-    // --- Theme ---
-    const root = document.documentElement;
-    const savedTheme = localStorage.getItem('dodaTheme');
-    if (savedTheme) root.setAttribute('data-theme', savedTheme);
+    /* ══════════════════════════════════════════
+       DRAG & DROP / FILE SELECTION
+    ══════════════════════════════════════════ */
+    const dropWrapper   = document.getElementById('dropWrapper');
+    const dropZone      = document.getElementById('dropZone');
+    const fileInput     = document.getElementById('fileInput');
+    const uploadSplit   = document.getElementById('uploadSplit');
+    const pdfFrame      = document.getElementById('pdfFrame');
+    const fileName      = document.getElementById('fileName');
+    const realFileInput = document.getElementById('realFileInput');
+    const changeBtn     = document.getElementById('changeBtn');
 
-    document.getElementById('themeBtn')?.addEventListener('click', () => {
-      const cur = root.getAttribute('data-theme') || 'light';
-      const next = cur === 'dark' ? 'light' : 'dark';
-      if (next === 'light') root.removeAttribute('data-theme');
-      else root.setAttribute('data-theme', 'dark');
-      localStorage.setItem('dodaTheme', next);
-    });
+    let blobURL = null;
 
-    // --- Refresh meta ---
-    const remaining = {{ remaining|default(0) }};
-    const lastManual = {{ last_manual_refresh|default(0) }};
-    const justRefreshed = {{ 'true' if just_refreshed else 'false' }};
+    function showPDF(file) {
+      if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+        alert('Please select a PDF file.');
+        return;
+      }
 
-    function fmtTime(sec){
-      const d = new Date(sec*1000);
-      return d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+      // Revoke previous blob
+      if (blobURL) { URL.revokeObjectURL(blobURL); blobURL = null; }
+
+      blobURL = URL.createObjectURL(file);
+      pdfFrame.src = blobURL;
+
+      fileName.textContent = file.name;
+
+      // Transfer file to form's hidden input
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      realFileInput.files = dt.files;
+
+      dropWrapper.style.display = 'none';
+      uploadSplit.classList.add('active');
     }
 
-    function tick(){
+    // Click on drop zone
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) showPDF(e.target.files[0]);
+    });
+
+    // Drag events on drop zone
+    ['dragenter', 'dragover'].forEach(ev => {
+      dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    });
+    ['dragleave', 'dragend'].forEach(ev => {
+      dropZone.addEventListener(ev, () => dropZone.classList.remove('dragover'));
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const f = e.dataTransfer.files[0];
+      if (f) showPDF(f);
+    });
+
+    // Global drop fallback
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const f = e.dataTransfer.files[0];
+      if (f && f.name.toLowerCase().endsWith('.pdf') && !uploadSplit.classList.contains('active')) showPDF(f);
+    });
+
+    // Change file button
+    changeBtn.addEventListener('click', () => {
+      uploadSplit.classList.remove('active');
+      dropWrapper.style.display = '';
+      if (blobURL) { URL.revokeObjectURL(blobURL); blobURL = null; }
+      pdfFrame.src = '';
+      fileInput.value = '';
+      realFileInput.value = '';
+      document.getElementById('order_no').value = '';
+      document.getElementById('idValue').value = '';
+      clearOrderErr();
+    });
+
+    /* ══════════════════════════════════════════
+       FORM VALIDATION
+    ══════════════════════════════════════════ */
+    const orderInput = document.getElementById('order_no');
+    const orderErr   = document.getElementById('orderErr');
+    const uploadForm = document.getElementById('uploadForm');
+
+    function clearOrderErr() {
+      orderInput.classList.remove('err');
+      orderErr.classList.remove('show');
+    }
+
+    function validateOrder(val) {
+      return /^[0-9]{6}$/.test(val.trim());
+    }
+
+    orderInput.addEventListener('input', () => {
+      const v = orderInput.value;
+      if (v.length > 0 && !validateOrder(v)) {
+        orderInput.classList.add('err');
+        orderErr.classList.add('show');
+      } else {
+        clearOrderErr();
+      }
+    });
+
+    uploadForm.addEventListener('submit', (e) => {
+      const val = orderInput.value;
+      if (!validateOrder(val)) {
+        e.preventDefault();
+        orderInput.classList.add('err');
+        orderErr.classList.add('show');
+        orderInput.focus();
+        return;
+      }
+      if (!realFileInput.files || !realFileInput.files.length) {
+        e.preventDefault();
+        alert('Please select a PDF file first.');
+      }
+    });
+
+    /* ══════════════════════════════════════════
+       REFRESH META COUNTDOWN
+    ══════════════════════════════════════════ */
+    const lastManual = {{ last_manual_refresh|default(0) }};
+
+    function fmtTime(sec) {
+      return new Date(sec * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function tick() {
       const el = document.getElementById('refreshMeta');
       if (!el) return;
-      const now = Math.floor(Date.now()/1000);
-      const cooldown = 300;
-      const rem = lastManual ? Math.max(0, cooldown - (now - lastManual)) : 0;
+      const now  = Math.floor(Date.now() / 1000);
+      const rem  = lastManual ? Math.max(0, 300 - (now - lastManual)) : 0;
       if (!lastManual) {
-        el.textContent = 'Ready to refresh';
+        el.textContent = 'Auto-checks every 15 min · Ready to refresh';
       } else if (rem > 0) {
-        const m = Math.floor(rem/60);
-        const s = rem%60;
-        el.textContent = `Last refresh ${fmtTime(lastManual)} · Next in ${m}:${String(s).padStart(2,'0')}`;
+        const m = Math.floor(rem / 60);
+        const s = rem % 60;
+        el.textContent = `Last refresh ${fmtTime(lastManual)} · Next manual in ${m}:${String(s).padStart(2, '0')}`;
       } else {
         el.textContent = `Last refresh ${fmtTime(lastManual)} · Ready`;
       }
@@ -367,79 +948,50 @@ TEMPLATE = """
     tick();
     setInterval(tick, 1000);
 
-    // --- Client-side search + sort ---
+    /* ══════════════════════════════════════════
+       SEARCH + SORT
+    ══════════════════════════════════════════ */
     const tbody = document.getElementById('tbody');
-    const rows = Array.from(document.querySelectorAll('tr.row'));
+    const rows  = Array.from(document.querySelectorAll('tr.row'));
 
     let activeSort = 'PRIORITY';
-    let query = '';
+    let query      = '';
 
-    function eventEpoch(row){
-      const iso = row.dataset.event || '';
-      if (!iso) return 0;
-      const d = new Date(iso);
-      const t = d.getTime();
-      return isNaN(t) ? 0 : Math.floor(t/1000);
-    }
+    const epoch = (iso) => { const t = new Date(iso).getTime(); return isNaN(t) ? 0 : Math.floor(t / 1000); };
+    const eventEpoch  = (r) => epoch(r.dataset.event || '');
+    const addedEpoch  = (r) => epoch(r.dataset.added || '');
+    const isPending   = (r) => { const s = r.dataset.status || ''; return !s || s === 'PENDING' || s === 'UNKNOWN' || s === 'NOT_PRESENTED'; };
+    const isStar      = (r) => r.dataset.star === '1';
 
-    function addedEpoch(row){
-      const iso = row.dataset.added || '';
-      if (!iso) return 0;
-      const d = new Date(iso);
-      const t = d.getTime();
-      return isNaN(t) ? 0 : Math.floor(t/1000);
-    }
-
-    function isPending(row){
-      const st = row.dataset.status || '';
-      return (st === 'PENDING' || st === 'UNKNOWN' || st === 'NOT_PRESENTED' || !st);
-    }
-
-    function isStar(row){
-      return String(row.dataset.star || '0') === '1';
-    }
-
-    function apply(){
+    function apply() {
       const q = query.trim().toLowerCase();
-      let filtered = rows.filter(r => {
-        if (q) {
-          const hay = ((r.dataset.order||'') + ' ' + (r.dataset.trailer||'')).toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        return true;
+      let list = rows.filter(r => {
+        if (!q) return true;
+        return ((r.dataset.order || '') + ' ' + (r.dataset.trailer || '')).toLowerCase().includes(q);
       });
 
-      filtered.sort((a,b) => {
-        if (activeSort === 'PRIORITY') {
-          const s = (isStar(b) - isStar(a));
-          if (s !== 0) return s;
-          const p = (isPending(a) - isPending(b));
-          if (p !== 0) return p;
-          return eventEpoch(b) - eventEpoch(a);
+      list.sort((a, b) => {
+        switch (activeSort) {
+          case 'PRIORITY': {
+            const s = isStar(b) - isStar(a); if (s) return s;
+            const p = isPending(a) - isPending(b); if (p) return p;
+            return eventEpoch(b) - eventEpoch(a);
+          }
+          case 'EVENT_DESC':  return eventEpoch(b)  - eventEpoch(a);
+          case 'ADDED_DESC':  return addedEpoch(b)  - addedEpoch(a);
+          case 'ORDER_ASC':   return (a.dataset.order   || '').localeCompare(b.dataset.order   || '');
+          case 'TRAILER_ASC': return (a.dataset.trailer || '').localeCompare(b.dataset.trailer || '');
+          default: return 0;
         }
-        if (activeSort === 'EVENT_DESC') return eventEpoch(b) - eventEpoch(a);
-        if (activeSort === 'ADDED_DESC') return addedEpoch(b) - addedEpoch(a);
-        if (activeSort === 'ORDER_ASC') return String(a.dataset.order||'').localeCompare(String(b.dataset.order||''));
-        if (activeSort === 'TRAILER_ASC') return String(a.dataset.trailer||'').localeCompare(String(b.dataset.trailer||''));
-        return 0;
       });
 
       if (!tbody) return;
       tbody.innerHTML = '';
-      for (const r of filtered) tbody.appendChild(r);
+      list.forEach(r => tbody.appendChild(r));
     }
 
-    const sortEl = document.getElementById('sort');
-    sortEl?.addEventListener('change', (e) => {
-      activeSort = e.target.value || 'PRIORITY';
-      apply();
-    });
-
-    const qEl = document.getElementById('q');
-    qEl?.addEventListener('input', (e) => {
-      query = e.target.value || '';
-      apply();
-    });
+    document.getElementById('sort')?.addEventListener('change', (e) => { activeSort = e.target.value; apply(); });
+    document.getElementById('q')?.addEventListener('input',  (e) => { query = e.target.value; apply(); });
 
     apply();
   </script>
@@ -491,6 +1043,10 @@ def create_app():
             flash("Order number is required.", "error")
             return redirect(url_for("index"))
 
+        if not order_no.isdigit() or len(order_no) != 6:
+            flash("Order number must be exactly 6 digits.", "error")
+            return redirect(url_for("index"))
+
         uploaded_file = request.files.get("pdf_file")
         if not uploaded_file or uploaded_file.filename == "":
             flash("Please select a PDF file to upload.", "error")
@@ -500,6 +1056,10 @@ def create_app():
         if not filename.lower().endswith(".pdf"):
             flash("Only PDF files are accepted.", "error")
             return redirect(url_for("index"))
+
+        # Identifier provided by user (optional — falls back to auto-extraction)
+        identifier_type  = (request.form.get("identifier_type")  or "trailer").strip()
+        identifier_value = (request.form.get("identifier_value") or "").strip()
 
         # Save to a temp file so extraction functions can read it from disk
         try:
@@ -522,8 +1082,11 @@ def create_app():
                 )
                 return redirect(url_for("index"))
 
-            # Extract trailer/plate number automatically (no confirmation dialog)
-            trailer = extract_trailer_or_plate_from_pdf(tmp_path)
+            # Use user-supplied identifier if given, else auto-extract
+            if identifier_value:
+                trailer = identifier_value
+            else:
+                trailer = extract_trailer_or_plate_from_pdf(tmp_path)
 
             # Move PDF into permanent storage
             storage_dir = ROOT / "storage" / order_no
@@ -543,16 +1106,15 @@ def create_app():
             )
             add_links(order_id, links)
 
-            trailer_msg = f" (trailer: {trailer})" if trailer else ""
+            id_msg = f" ({identifier_type}: {trailer})" if trailer else ""
             flash(
-                f"Order {order_no} added with {len(links)} QR link(s){trailer_msg}.",
+                f"Order {order_no} added with {len(links)} QR link(s){id_msg}.",
                 "success",
             )
 
         except Exception as e:
             logger.exception("Upload error for order %s: %s", order_no, e)
             flash(f"Upload failed: {e}", "error")
-            # Clean up temp file if still around
             try:
                 Path(tmp_path).unlink(missing_ok=True)
             except Exception:
