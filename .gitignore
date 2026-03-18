@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+build/
+dist/
+DODA-Tracker-win/
+DODA-Tracker-win.zip
+*.spec
+data/
+storage/
+logs/
+*.db
+.DS_Store
