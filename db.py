@@ -143,11 +143,8 @@ def normalize_urls():
 
 
 def record_check(link_id: int, url: str, status: dict):
-    # status dict: {ok, is_clear, matchedPhrase, status, label, severity, http_status, error, excerpt, crossed_at}
     with connect() as con:
         now = utc_now()
-
-        # Store a compact status string (normalized status code + label + optional time)
         compact = None
         code = status.get("status") or ""
         label = status.get("label") or ""
@@ -161,30 +158,15 @@ def record_check(link_id: int, url: str, status: dict):
 
         con.execute(
             "INSERT INTO checks(link_id, checked_at, status, is_clear, http_status, error) VALUES(?,?,?,?,?,?)",
-            (
-                link_id,
-                now,
-                compact or status.get("excerpt"),
-                1 if status.get("is_clear") else 0,
-                status.get("http_status"),
-                status.get("error"),
-            ),
+            (link_id, now, compact or status.get("excerpt"), 1 if status.get("is_clear") else 0, status.get("http_status"), status.get("error")),
         )
-
         con.execute(
             "UPDATE links SET last_checked=?, last_status=?, last_is_clear=?, last_event_ts=? WHERE id=?",
-            (
-                now,
-                compact or status.get("excerpt"),
-                1 if status.get("is_clear") else 0,
-                event_ts_iso,
-                link_id,
-            ),
+            (now, compact or status.get("excerpt"), 1 if status.get("is_clear") else 0, event_ts_iso, link_id),
         )
 
 
 def toggle_star(order_no: str) -> int:
-    """Toggle starred flag for an order. Returns new value (0/1)."""
     with connect() as con:
         cur = con.execute("SELECT starred FROM orders WHERE order_no=?", (order_no,))
         row = cur.fetchone()
@@ -197,24 +179,18 @@ def toggle_star(order_no: str) -> int:
 
 
 def update_notes(order_no: str, notes: str) -> bool:
-    """Save a note for an order. Returns True if the order was found."""
     with connect() as con:
         cur = con.execute("UPDATE orders SET notes=? WHERE order_no=?", (notes, order_no))
         return cur.rowcount > 0
 
 
 def delete_order(order_no: str) -> dict:
-    """Delete an order and its related rows.
-
-    Returns a dict with {pdf_path} for optional file handling.
-    """
     with connect() as con:
         cur = con.execute("SELECT id, pdf_path FROM orders WHERE order_no=?", (order_no,))
         row = cur.fetchone()
         if not row:
             return {"pdf_path": None}
         oid, pdf_path = int(row[0]), row[1]
-
         con.execute("DELETE FROM checks WHERE link_id IN (SELECT id FROM links WHERE order_id=?)", (oid,))
         con.execute("DELETE FROM links WHERE order_id=?", (oid,))
         con.execute("DELETE FROM orders WHERE id=?", (oid,))
@@ -234,6 +210,20 @@ def list_orders() -> list[dict]:
         )
         rows = cur.fetchall()
 
+        # Detect orders that previously had a MEX_RED (ROJO) check
+        rojo_cur = con.execute(
+            """
+            SELECT DISTINCT o.order_no
+            FROM orders o
+            JOIN links l ON l.order_id = o.id
+            JOIN checks c ON c.link_id = l.id
+            WHERE c.is_clear = 0
+              AND c.status IS NOT NULL
+              AND (c.status = 'MEX_RED' OR c.status LIKE 'MEX_RED |%')
+            """
+        )
+        had_rojo_set = {row[0] for row in rojo_cur.fetchall()}
+
     # group by order
     by = {}
     for order_no, pdf_path, created_at, trailer_no, starred, notes, url, last_checked, last_is_clear, last_status, last_event_ts in rows:
@@ -245,6 +235,7 @@ def list_orders() -> list[dict]:
             "trailer_no": trailer_no,
             "starred": int(starred or 0),
             "notes": notes or "",
+            "had_rojo": order_no in had_rojo_set,
             "links": [],
         })
         if url:
@@ -257,7 +248,6 @@ def list_orders() -> list[dict]:
                 "last_event_ts": last_event_ts,
             })
 
-    # Sort links by last_checked desc so the dashboard shows the most recent status
     def key(l):
         lc = (l.get("last_checked") or "").strip()
         return (bool(l.get("last_checked")), lc)
@@ -265,5 +255,4 @@ def list_orders() -> list[dict]:
     for o in by.values():
         o["links"].sort(key=key, reverse=True)
 
-    # Hide any orders that have no links (no QR / no tracking)
     return [o for o in by.values() if o.get("links")]
