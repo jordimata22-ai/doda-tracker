@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
 import time
+from functools import wraps
 from pathlib import Path
 
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, session
 
-from db import list_orders, delete_order, toggle_star, upsert_order_with_pdf, add_links, update_notes
+from db import list_orders, delete_order, toggle_star, upsert_order_with_pdf, add_links, update_notes, get_order_summary
 from delete_utils import move_to_trash
 from checks_runner import run_checks_once
 
@@ -18,12 +19,40 @@ _last_manual_refresh = 0.0
 logger = logging.getLogger(__name__)
 
 
-
 def create_app():
     app = Flask(__name__)
-    app.secret_key = "doda-tracker-secret"
+    app.secret_key = "ALSdoda2026secure"
+
+    def login_required(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not session.get("logged_in"):
+                return redirect(url_for("login"))
+            return f(*args, **kwargs)
+        return decorated
+
+    @app.get("/login")
+    @app.post("/login")
+    def login():
+        if session.get("logged_in"):
+            return redirect(url_for("index"))
+        error = None
+        if request.method == "POST":
+            pw = request.form.get("password", "")
+            if pw == "CrossTheBorder26":
+                session["logged_in"] = True
+                return redirect(url_for("index"))
+            else:
+                error = "Incorrect password. Please try again."
+        return render_template("login.html", error=error)
+
+    @app.post("/logout")
+    def logout():
+        session.clear()
+        return redirect(url_for("login"))
 
     @app.get("/")
+    @login_required
     def index():
         orders = list_orders()
         now = time.time()
@@ -36,7 +65,16 @@ def create_app():
             just_refreshed=(request.args.get('refreshed') == '1'),
         )
 
+    @app.get("/check-order/<order_no>")
+    @login_required
+    def check_order(order_no: str):
+        summary = get_order_summary(order_no)
+        if summary:
+            return jsonify({"exists": True, **summary})
+        return jsonify({"exists": False})
+
     @app.post("/refresh")
+    @login_required
     def refresh_now():
         global _last_manual_refresh
         now = time.time()
@@ -50,6 +88,7 @@ def create_app():
         return redirect(url_for("index", refreshed=1))
 
     @app.post("/upload")
+    @login_required
     def upload_pdf():
         from qr_extract import extract_qr_links_from_pdf
         from trailer_extract import extract_trailer_or_plate_from_pdf
@@ -103,8 +142,8 @@ def create_app():
             order_id = upsert_order_with_pdf(order_no=order_no, pdf_path=str(dest), trailer_no=trailer)
             add_links(order_id, links)
 
-            id_msg = f" ({identifier_type}: {trailer})" if trailer else ""
-            flash(f"Order {order_no} added with {len(links)} QR link(s){id_msg}.", "success")
+            trailer_msg = f" \u2014 Trailer {trailer}" if trailer else ""
+            flash(f"Order {order_no} added successfully{trailer_msg}.", "success")
 
         except Exception as e:
             logger.exception("Upload error for order %s: %s", order_no, e)
@@ -117,6 +156,7 @@ def create_app():
         return redirect(url_for("index"))
 
     @app.post("/notes/<order_no>")
+    @login_required
     def save_notes(order_no: str):
         data  = request.get_json(silent=True) or {}
         notes = str(data.get("notes", "")).strip()
@@ -124,6 +164,7 @@ def create_app():
         return jsonify({"ok": ok})
 
     @app.post("/star/<order_no>")
+    @login_required
     def toggle_star_route(order_no: str):
         try:
             toggle_star(order_no)
@@ -132,6 +173,7 @@ def create_app():
         return redirect(url_for("index"))
 
     @app.post("/delete/<order_no>")
+    @login_required
     def delete_order_route(order_no: str):
         info     = delete_order(order_no)
         pdf_path = info.get("pdf_path")

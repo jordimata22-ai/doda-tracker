@@ -65,7 +65,7 @@
 
     /* ── FLASH ────────────────────────────────── */
     .flash{border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
-    .flash-ok {background:rgba(0,200,83,.12); border:1px solid rgba(0,200,83,.3); color:#4ade80;}
+    .flash-ok {background:#065F2E; border:1px solid rgba(0,200,83,.2); border-left:4px solid #00C853; color:#fff; font-weight:700;}
     .flash-err{background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.3);color:#ff7068;}
 
     /* ── DROP ZONE ────────────────────────────── */
@@ -210,6 +210,9 @@
     .empty-title{font-size:22px;font-weight:800;color:var(--text);}
     .empty-sub{font-size:14px;color:var(--muted);}
 
+    /* ── FILTER COUNTS ───────────────────────── */
+    .f-cnt{font-weight:600;opacity:.8;margin-left:3px;}
+
     /* ── RESPONSIVE ───────────────────────────── */
     @media(max-width:900px){.upload-split.active{grid-template-columns:1fr;}.preview-panel{display:none;}}
     @media(max-width:640px){
@@ -234,6 +237,9 @@
     <span id="refreshMeta" class="refresh-meta"></span>
     <div class="hdr-toggles">
       <button id="themeBtn" class="hdr-toggle" title="Toggle dark/light mode">&#9790;</button>
+      <form method="post" action="{{ url_for('logout') }}" style="margin:0">
+        <button type="submit" class="hdr-toggle" title="Log out">Logout</button>
+      </form>
     </div>
   </div>
 </header>
@@ -351,10 +357,10 @@
 
     <!-- Filter bar -->
     <div class="filter-bar">
-      <button class="filter-btn filter-all on" data-f="all">All</button>
-      <button class="filter-btn filter-verde" data-f="verde">&#11044; VERDE</button>
-      <button class="filter-btn filter-rojo"  data-f="rojo">&#11044; ROJO</button>
-      <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDING</button>
+      <button class="filter-btn filter-all on" data-f="all">All <span class="f-cnt" id="cnt-all"></span></button>
+      <button class="filter-btn filter-verde" data-f="verde">&#11044; CLEARED <span class="f-cnt" id="cnt-verde"></span></button>
+      <button class="filter-btn filter-rojo"  data-f="rojo">&#11044; INSPECTION <span class="f-cnt" id="cnt-rojo"></span></button>
+      <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDING <span class="f-cnt" id="cnt-pend"></span></button>
       <span id="showingInfo" class="showing-info"></span>
     </div>
 
@@ -444,9 +450,9 @@
               {% if is_insp %}
                 <span class="badge b-insp" data-badge-type="insp">&#x1F6A8; Inspected</span>
               {% elif grp == 'verde' %}
-                <span class="badge b-verde" data-badge-type="verde">VERDE / CLEARED</span>
+                <span class="badge b-verde" data-badge-type="verde">CLEARED</span>
               {% elif sk == 'MEX_RED' %}
-                <span class="badge b-rojo" data-badge-type="rojo">ROJO / MX RED</span>
+                <span class="badge b-rojo" data-badge-type="rojo">INSPECTION</span>
               {% else %}
                 <span class="badge b-pend" data-badge-type="pend">PENDING</span>
               {% endif %}
@@ -524,6 +530,18 @@
   </div>
 
 </main>
+
+<!-- ══ DUPLICATE ORDER MODAL ════════════════════ -->
+<div id="dupModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.65);align-items:center;justify-content:center;">
+  <div style="background:#112A40;border:1px solid #0066CC;border-radius:12px;padding:32px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.5);">
+    <div style="font-size:16px;font-weight:800;margin-bottom:10px;color:#fff;">Order Already Exists</div>
+    <div id="dupBody" style="font-size:13px;color:#A0AEC0;margin-bottom:20px;line-height:1.7;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button id="dupCancel" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#A0AEC0;padding:9px 18px;font-size:13px;font-family:inherit;cursor:pointer;">Cancel</button>
+      <button id="dupReplace" style="background:#B30000;border:none;border-radius:8px;color:#fff;padding:9px 18px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">Replace Order</button>
+    </div>
+  </div>
+</div>
 
 <script>
 
@@ -667,25 +685,74 @@ orderInput.addEventListener('input', function() {
   } else { clearOrderErr(); }
 });
 
-uploadForm.addEventListener('submit', function(e) {
-  if (!validateOrder(orderInput.value)) {
-    e.preventDefault();
-    orderInput.classList.add('err'); orderErr.classList.add('show'); orderInput.focus();
-    return;
-  }
-  // If DataTransfer failed, use fetch with the stored droppedFile
+/* ══════════════════════════════════════════════
+   DUPLICATE ORDER CHECK MODAL
+══════════════════════════════════════════════ */
+var dupModal   = document.getElementById('dupModal');
+var dupBody    = document.getElementById('dupBody');
+var dupCancel  = document.getElementById('dupCancel');
+var dupReplace = document.getElementById('dupReplace');
+var replaceConfirmed = false;
+
+function showDupModal(data) {
+  var status = (data.last_status || 'PENDING').split('|')[0].trim();
+  dupBody.innerHTML =
+    'Order <strong style="color:#fff">' + data.order_no + '</strong> already exists.<br>' +
+    'Uploading will replace the existing record. Are you sure?<br><br>' +
+    '<strong style="color:#A0AEC0">Current status:</strong> ' + status + '<br>' +
+    '<strong style="color:#A0AEC0">Trailer:</strong> ' + (data.trailer_no || '&mdash;') + '<br>' +
+    '<strong style="color:#A0AEC0">Date added:</strong> ' + (data.created_at || '&mdash;');
+  dupModal.style.display = 'flex';
+}
+
+function hideDupModal() {
+  dupModal.style.display = 'none';
+}
+
+dupCancel.addEventListener('click', hideDupModal);
+dupModal.addEventListener('click', function(e) { if (e.target === dupModal) hideDupModal(); });
+dupReplace.addEventListener('click', function() {
+  hideDupModal();
+  replaceConfirmed = true;
+  doUpload();
+});
+
+function doUpload() {
   if (droppedFile && (!realFileInput.files || !realFileInput.files.length)) {
-    e.preventDefault();
     var fd = new FormData(uploadForm);
     fd.set('pdf_file', droppedFile, droppedFile.name);
     fetch('/upload', { method: 'POST', body: fd })
       .then(function(r) { window.location.href = r.url || '/'; })
       .catch(function(err) { alert('Upload failed: ' + err.message); });
+  } else if (!realFileInput.files || !realFileInput.files.length) {
+    alert('Please select a PDF file first.');
+  } else {
+    uploadForm.submit();
+  }
+}
+
+uploadForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  if (!validateOrder(orderInput.value)) {
+    orderInput.classList.add('err'); orderErr.classList.add('show'); orderInput.focus();
     return;
   }
-  if (!realFileInput.files || !realFileInput.files.length) {
-    e.preventDefault(); alert('Please select a PDF file first.');
+  if (replaceConfirmed) {
+    replaceConfirmed = false;
+    doUpload();
+    return;
   }
+  var orderNo = orderInput.value.trim();
+  fetch('/check-order/' + encodeURIComponent(orderNo))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.exists) {
+        showDupModal(data);
+      } else {
+        doUpload();
+      }
+    })
+    .catch(function() { doUpload(); });
 });
 
 /* ══════════════════════════════════════════════
@@ -741,13 +808,28 @@ var addEpoch = function(r) { return epoch(r.dataset.added || ''); };
 var isPend   = function(r) { var s = r.dataset.status||''; return !s||s==='PENDING'||s==='UNKNOWN'||s==='NOT_PRESENTED'; };
 var isStar   = function(r) { return r.dataset.star === '1'; };
 
+function updateCounts(searchFiltered) {
+  var cnt = {verde:0, rojo:0, pend:0};
+  searchFiltered.forEach(function(r) {
+    var g = r.dataset.grp;
+    if (cnt[g] !== undefined) cnt[g]++;
+  });
+  var el = document.getElementById('cnt-all');   if(el) el.textContent = '(' + searchFiltered.length + ')';
+  el = document.getElementById('cnt-verde'); if(el) el.textContent = '(' + cnt.verde + ')';
+  el = document.getElementById('cnt-rojo');  if(el) el.textContent = '(' + cnt.rojo  + ')';
+  el = document.getElementById('cnt-pend');  if(el) el.textContent = '(' + cnt.pend  + ')';
+}
+
 function apply() {
   var q = query.trim().toLowerCase();
-  var list = allRows.filter(function(r) {
-    if (q) {
-      var hay = (r.dataset.order||'') + ' ' + (r.dataset.trailer||'') + ' ' + (r.dataset.notes||'');
-      if (hay.toLowerCase().indexOf(q) === -1) return false;
-    }
+  var searchFiltered = allRows.filter(function(r) {
+    if (!q) return true;
+    var hay = (r.dataset.order||'') + ' ' + (r.dataset.trailer||'') + ' ' + (r.dataset.notes||'');
+    return hay.toLowerCase().indexOf(q) !== -1;
+  });
+  updateCounts(searchFiltered);
+
+  var list = searchFiltered.filter(function(r) {
     if (activeFilters.size > 0 && !activeFilters.has(r.dataset.grp)) return false;
     return true;
   });
@@ -776,7 +858,7 @@ function apply() {
   var pageRows = list.slice(start, end);
 
   var info = document.getElementById('showingInfo');
-  if (info) info.textContent = total === 0 ? 'No orders found' : 'Showing ' + (start+1) + '–' + end + ' of ' + total;
+  if (info) info.textContent = total === 0 ? 'No orders found' : 'Showing ' + (start+1) + '\u2013' + end + ' of ' + total;
 
   if (tableFooter) tableFooter.style.display = total > PAGE_SIZE ? '' : 'none';
   var pi = document.getElementById('pageInfo');
@@ -789,7 +871,7 @@ function apply() {
   tbody.innerHTML = '';
   if (pageRows.length === 0 && allRows.length > 0) {
     var noMatch = document.createElement('tr');
-    noMatch.innerHTML = '<td colspan="6"><div class="empty"><div class="empty-sub" style="padding:28px 0">' + t.no_match + '</div></div></td>';
+    noMatch.innerHTML = '<td colspan="6"><div class="empty"><div class="empty-sub" style="padding:28px 0">No orders match your search.</div></div></td>';
     tbody.appendChild(noMatch);
   } else {
     pageRows.forEach(function(r) { tbody.appendChild(r); });

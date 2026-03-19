@@ -197,6 +197,31 @@ def delete_order(order_no: str) -> dict:
         return {"pdf_path": pdf_path}
 
 
+def get_order_summary(order_no: str) -> dict | None:
+    with connect() as con:
+        cur = con.execute(
+            """
+            SELECT o.order_no, o.trailer_no, o.created_at, l.last_status
+            FROM orders o
+            LEFT JOIN links l ON l.order_id = o.id
+            WHERE o.order_no = ?
+            ORDER BY l.last_checked DESC
+            LIMIT 1
+            """,
+            (order_no,)
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        order_no2, trailer_no, created_at, last_status = row
+        return {
+            "order_no": order_no2,
+            "trailer_no": trailer_no,
+            "created_at": to_cst(created_at) or created_at,
+            "last_status": last_status or "PENDING",
+        }
+
+
 def list_orders() -> list[dict]:
     with connect() as con:
         cur = con.execute(
