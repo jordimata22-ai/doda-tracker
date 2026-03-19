@@ -552,29 +552,10 @@
 <!-- ══ CONFIRM UPLOAD MODAL ══════════════════════ -->
 <div id="confModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.65);align-items:center;justify-content:center;">
   <div style="background:#112A40;border:1px solid #0066CC;border-radius:12px;padding:32px;max-width:440px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.5);">
-    <div style="font-size:16px;font-weight:800;margin-bottom:20px;color:#fff;">Confirm Shipment Details</div>
-
-    <div style="margin-bottom:14px;">
-      <label style="display:block;font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Order Number</label>
-      <input type="text" id="confOrder" class="conf-input" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="6-digit order number" />
-      <span id="confOrderErr" style="display:none;font-size:11px;color:#FF3B30;margin-top:4px;">Must be exactly 6 digits (numbers only).</span>
-    </div>
-
-    <div style="margin-bottom:14px;">
-      <label style="display:block;font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Identifier Type</label>
-      <select id="confIdType" class="conf-select">
-        <option value="trailer">Trailer</option>
-        <option value="plates">Plates</option>
-      </select>
-    </div>
-
-    <div style="margin-bottom:24px;">
-      <label style="display:block;font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Identifier Value</label>
-      <input type="text" id="confIdValue" class="conf-input" autocomplete="off" placeholder="Enter trailer or plate number" />
-    </div>
-
+    <div style="font-size:16px;font-weight:800;margin-bottom:16px;color:#fff;">Confirm Shipment Details</div>
+    <div id="confSummary" style="font-size:14px;color:#A0AEC0;line-height:1.7;margin-bottom:24px;"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
-      <button id="confCancel" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#A0AEC0;padding:10px 20px;font-size:13px;font-family:inherit;cursor:pointer;">Cancel</button>
+      <button id="confGoBack" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#A0AEC0;padding:10px 20px;font-size:13px;font-family:inherit;cursor:pointer;">Go Back</button>
       <button id="confSave" style="background:#0066CC;border:none;border-radius:8px;color:#fff;padding:10px 20px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">Confirm &amp; Save</button>
     </div>
   </div>
@@ -735,61 +716,47 @@ orderInput.addEventListener('input', function() {
 });
 
 /* ══════════════════════════════════════════════
-   CONFIRM UPLOAD MODAL
+   CONFIRM UPLOAD MODAL  (read-only summary)
 ══════════════════════════════════════════════ */
-var confModal     = document.getElementById('confModal');
-var confOrderInp  = document.getElementById('confOrder');
-var confOrderErr  = document.getElementById('confOrderErr');
-var confIdType    = document.getElementById('confIdType');
-var confIdValue   = document.getElementById('confIdValue');
-var confCancel    = document.getElementById('confCancel');
-var confSave      = document.getElementById('confSave');
+var confModal   = document.getElementById('confModal');
+var confSummary = document.getElementById('confSummary');
+var confGoBack  = document.getElementById('confGoBack');
+var confSave    = document.getElementById('confSave');
+
+// Values captured from the form when the modal opens
+var pendingOrderNo = '';
+var pendingIdType  = '';
+var pendingIdValue = '';
 
 function showConfModal() {
-  confOrderInp.value = orderInput.value || '';
-  confIdType.value   = document.getElementById('idType').value || 'trailer';
-  confIdValue.value  = '';  // never pre-fill — manual entry only
-  confOrderInp.classList.remove('err');
-  confOrderErr.style.display = 'none';
+  pendingOrderNo = orderInput.value.trim();
+  pendingIdType  = document.getElementById('idType').value || 'trailer';
+  pendingIdValue = document.getElementById('idValue').value.trim();
+
+  var idLabel = pendingIdType === 'plates' ? 'Plates' : 'Trailer';
+  var idPart  = pendingIdValue
+    ? '<strong style="color:#fff">' + idLabel + '</strong>: <strong style="color:#fff">' + pendingIdValue + '</strong>'
+    : '<span style="color:#fbbf24">No ' + idLabel.toLowerCase() + ' number entered</span>';
+
+  confSummary.innerHTML =
+    'Order <strong style="color:#fff">' + pendingOrderNo + '</strong> \u2014 ' + idPart + '.' +
+    '<br><br>Does this look correct?';
+
   confModal.style.display = 'flex';
-  setTimeout(function(){ confOrderInp.focus(); }, 50);
 }
 
 function hideConfModal() {
   confModal.style.display = 'none';
 }
 
-confCancel.addEventListener('click', function() {
-  hideConfModal();
-  changeBtn.click();  // reset to drop zone
-});
+// "Go Back" returns to form, not to drop zone
+confGoBack.addEventListener('click', hideConfModal);
 confModal.addEventListener('click', function(e) { if (e.target === confModal) hideConfModal(); });
 
-confOrderInp.addEventListener('input', function() {
-  if (confOrderInp.value.length > 0 && !validateOrder(confOrderInp.value)) {
-    confOrderInp.classList.add('err');
-    confOrderErr.style.display = 'block';
-  } else {
-    confOrderInp.classList.remove('err');
-    confOrderErr.style.display = 'none';
-  }
-});
-
 confSave.addEventListener('click', function() {
-  if (!validateOrder(confOrderInp.value)) {
-    confOrderInp.classList.add('err');
-    confOrderErr.style.display = 'block';
-    confOrderInp.focus();
-    return;
-  }
-  // Copy modal values into hidden form fields
-  orderInput.value = confOrderInp.value;
-  document.getElementById('idType').value  = confIdType.value;
-  document.getElementById('idValue').value = confIdValue.value;
   hideConfModal();
   // Duplicate check then upload
-  var orderNo = confOrderInp.value.trim();
-  fetch('/check-order/' + encodeURIComponent(orderNo))
+  fetch('/check-order/' + encodeURIComponent(pendingOrderNo))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.exists) { showDupModal(data); }
@@ -831,6 +798,11 @@ dupReplace.addEventListener('click', function() {
 });
 
 function doUpload() {
+  // Write pending values into the real form inputs before submitting
+  orderInput.value = pendingOrderNo;
+  document.getElementById('idType').value  = pendingIdType;
+  document.getElementById('idValue').value = pendingIdValue;
+
   if (droppedFile && (!realFileInput.files || !realFileInput.files.length)) {
     var fd = new FormData(uploadForm);
     fd.set('pdf_file', droppedFile, droppedFile.name);
@@ -846,7 +818,11 @@ function doUpload() {
 
 uploadForm.addEventListener('submit', function(e) {
   e.preventDefault();
-  // Show confirmation modal — it handles validation, duplicate check, and submission
+  // Validate form fields before opening the read-only confirmation modal
+  if (!validateOrder(orderInput.value)) {
+    orderInput.classList.add('err'); orderErr.classList.add('show'); orderInput.focus();
+    return;
+  }
   showConfModal();
 });
 
