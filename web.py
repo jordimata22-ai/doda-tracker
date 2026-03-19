@@ -57,19 +57,19 @@ def create_app():
 
         order_no = (request.form.get("order_no") or "").strip()
         if not order_no:
-            flash("Número de orden requerido.", "error")
+            flash("Order number is required.", "error")
             return redirect(url_for("index"))
         if not order_no.isdigit() or len(order_no) != 6:
-            flash("El número de orden debe ser exactamente 6 dígitos.", "error")
+            flash("Order number must be exactly 6 digits (numbers only).", "error")
             return redirect(url_for("index"))
 
         uploaded_file = request.files.get("pdf_file")
         if not uploaded_file or uploaded_file.filename == "":
-            flash("Por favor selecciona un archivo PDF.", "error")
+            flash("Please select a PDF file.", "error")
             return redirect(url_for("index"))
         filename = uploaded_file.filename
         if not filename.lower().endswith(".pdf"):
-            flash("Solo se aceptan archivos PDF.", "error")
+            flash("Only PDF files are accepted.", "error")
             return redirect(url_for("index"))
 
         identifier_type  = (request.form.get("identifier_type")  or "trailer").strip()
@@ -86,7 +86,7 @@ def create_app():
                 no_qr_dir = ROOT / "storage" / "_NO_QR"
                 no_qr_dir.mkdir(parents=True, exist_ok=True)
                 tmp_path.replace(no_qr_dir / filename)
-                flash(f"No se encontró código QR en '{filename}'. Archivo movido a _NO_QR.", "error")
+                flash(f"No QR code found in '{filename}'. File moved to _NO_QR.", "error")
                 return redirect(url_for("index"))
 
             trailer = identifier_value if identifier_value else extract_trailer_or_plate_from_pdf(tmp_path)
@@ -104,11 +104,11 @@ def create_app():
             add_links(order_id, links)
 
             id_msg = f" ({identifier_type}: {trailer})" if trailer else ""
-            flash(f"Orden {order_no} agregada con {len(links)} enlace(s) QR{id_msg}.", "success")
+            flash(f"Order {order_no} added with {len(links)} QR link(s){id_msg}.", "success")
 
         except Exception as e:
             logger.exception("Upload error for order %s: %s", order_no, e)
-            flash(f"Error al subir: {e}", "error")
+            flash(f"Upload error: {e}", "error")
             try:
                 Path(tmp_path).unlink(missing_ok=True)
             except Exception:

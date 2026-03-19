@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -28,15 +28,15 @@
       --opt-bg:    #1a2a3a;
     }
     [data-theme="light"] {
-      --bg:        #E8F0F7;
-      --card:      #D0E4F0;
-      --text:      #0D2137;
-      --muted:     #4A6B8A;
-      --bd:        rgba(13,33,55,0.15);
-      --bd-hi:     rgba(0,102,204,0.40);
-      --shadow:    0 8px 32px rgba(0,0,0,0.10);
-      --inp-bg:    rgba(0,0,0,0.05);
-      --opt-bg:    #c0d8ea;
+      --bg:        #D8EAF5;
+      --card:      #E0EEF8;
+      --text:      #0A1628;
+      --muted:     #3A5A78;
+      --bd:        rgba(10,22,40,0.18);
+      --bd-hi:     rgba(0,102,204,0.50);
+      --shadow:    0 8px 32px rgba(0,0,0,0.12);
+      --inp-bg:    rgba(0,0,0,0.06);
+      --opt-bg:    #b8d4e8;
     }
 
     /* ── RESET ────────────────────────────────── */
@@ -149,7 +149,9 @@
     tbody tr{border-bottom:1px solid var(--bd);transition:background .15s;}
     tbody tr:last-child{border-bottom:none;}
     tbody tr:hover{background:rgba(0,170,255,.04);}
-    [data-theme="light"] tbody tr:hover{background:rgba(0,102,204,.05);}
+    [data-theme="light"] tbody tr:nth-child(odd) {background:#EAF3FA;}
+    [data-theme="light"] tbody tr:nth-child(even){background:#D5E8F5;}
+    [data-theme="light"] tbody tr:hover{background:rgba(0,102,204,.12);}
     tbody tr.st-verde  {box-shadow:inset 4px 0 0 var(--green);}
     tbody tr.st-rojo   {box-shadow:inset 4px 0 0 var(--red);}
     tbody tr.st-pending{box-shadow:inset 4px 0 0 var(--amber);}
@@ -166,10 +168,15 @@
     .b-verde{background:rgba(0,200,83,.14);  color:#3ddc84;border:1px solid rgba(0,200,83,.32);}
     .b-rojo {background:rgba(255,59,48,.14); color:#ff7068;border:1px solid rgba(255,59,48,.32); animation:pulse-red 2.5s ease-in-out infinite;}
     .b-pend {background:rgba(255,179,0,.14); color:#fbbf24;border:1px solid rgba(255,179,0,.32); animation:pulse-amb 2.5s ease-in-out infinite;}
-    /* Inspeccionado: verde badge with red-tinged glow + siren prefix (no ::before dot — emoji acts as indicator) */
+    /* Inspected: verde badge with red-tinged glow + siren prefix (no ::before dot — emoji acts as indicator) */
     .b-insp{background:rgba(255,59,48,.08);color:#3ddc84;border:1px solid rgba(255,59,48,.30);animation:pulse-ins 2.5s ease-in-out infinite;}
     .b-insp::before{display:none;}
     .status-detail{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4;}
+    /* Light mode: darker, more saturated badge colors for contrast */
+    [data-theme="light"] .b-verde{background:#D4F0DF;color:#006B2B;border:2px solid #006B2B;box-shadow:0 1px 4px rgba(0,107,43,.25);}
+    [data-theme="light"] .b-rojo {background:#FDDEDE;color:#B30000;border:2px solid #B30000;box-shadow:0 1px 4px rgba(179,0,0,.25);}
+    [data-theme="light"] .b-pend {background:#FFF0CC;color:#8A5700;border:2px solid #8A5700;box-shadow:0 1px 4px rgba(138,87,0,.25);}
+    [data-theme="light"] .b-insp {background:#FFE8E8;color:#6B0000;border:2px solid #6B0000;box-shadow:0 1px 4px rgba(107,0,0,.25);}
 
     /* ── NOTES ────────────────────────────────── */
     .notes-td{min-width:130px;max-width:210px;}
@@ -226,7 +233,6 @@
   <div class="header-right">
     <span id="refreshMeta" class="refresh-meta"></span>
     <div class="hdr-toggles">
-      <button id="langBtn" class="hdr-toggle" title="Toggle language"><span id="lEN">EN</span>&nbsp;/&nbsp;<span id="lES" style="font-weight:800">ES</span></button>
       <button id="themeBtn" class="hdr-toggle" title="Toggle dark/light mode">&#9790;</button>
     </div>
   </div>
@@ -257,7 +263,7 @@
         <path d="M22 38c-3.31 0-6-2.69-6-6 0-3.09 2.33-5.64 5.35-5.97C22.19 23.18 24.9 21 28 21c1.93 0 3.68.79 4.95 2.05A8 8 0 0148 30c0 4.42-3.58 8-8 8H22z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M32 37v10M28 43l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <div class="drop-title" id="dropTitle">Arrastra &amp; Suelta tu DODA PDF aqu&iacute; o <span class="drop-browse">haz clic para buscar</span></div>
+      <div class="drop-title" id="dropTitle">Drag &amp; Drop your DODA PDF here or <span class="drop-browse">click to browse</span></div>
       <!-- Overlay file input — covers the entire drop zone, triggers dialog on click natively -->
       <input type="file" id="fileInput" accept=".pdf" title="" aria-label="Select PDF">
     </div>
@@ -270,7 +276,7 @@
     <div class="form-panel">
       <div class="form-panel-hdr">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--hl)"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6"/></svg>
-        <span data-i18n="form_header">Subir DODA PDF</span>
+        <span>Upload DODA PDF</span>
       </div>
 
       <div class="file-chip">
@@ -283,29 +289,29 @@
         <input type="file" id="realFileInput" name="pdf_file" accept=".pdf" style="display:none" tabindex="-1">
 
         <div class="form-group">
-          <label class="form-label" for="order_no" data-i18n="order_label">N&uacute;mero de Orden</label>
+          <label class="form-label" for="order_no" >Order Number</label>
           <input type="text" id="order_no" name="order_no" class="form-input"
-                 data-i18n-ph="order_ph" placeholder="N&uacute;mero de 6 d&iacute;gitos"
+                 placeholder="6-digit order number"
                  maxlength="6" inputmode="numeric" autocomplete="off" />
-          <span class="form-error" id="orderErr" data-i18n="order_err">Debe ser exactamente 6 d&iacute;gitos (solo n&uacute;meros).</span>
+          <span class="form-error" id="orderErr" >Must be exactly 6 digits (numbers only).</span>
         </div>
 
         <div class="form-group">
-          <label class="form-label" data-i18n="id_label">Identificador</label>
+          <label class="form-label" >Identifier</label>
           <div class="id-row">
             <select name="identifier_type" id="idType" class="form-select">
-              <option value="trailer" data-i18n="opt_trailer">Remolque</option>
-              <option value="plates" data-i18n="opt_plates">Placas</option>
+              <option value="trailer">Trailer</option>
+              <option value="plates">Plates</option>
             </select>
             <input type="text" name="identifier_value" id="idValue" class="form-input"
-                   data-i18n-ph="id_ph" placeholder="Ingresa el valor" autocomplete="off" />
+                   placeholder="Enter value" autocomplete="off" />
           </div>
         </div>
 
-        <button type="submit" class="submit-btn" data-i18n="submit">Enviar</button>
+        <button type="submit" class="submit-btn">Submit</button>
       </form>
 
-      <button type="button" class="change-btn" id="changeBtn" data-i18n="change_file">&#8629; Cambiar archivo</button>
+      <button type="button" class="change-btn" id="changeBtn" >&#8629; Change file</button>
     </div>
 
     <!-- RIGHT: PDF preview -->
@@ -327,28 +333,28 @@
           </button>
         </form>
         <select id="sort" class="sort-sel" aria-label="Sort">
-          <option value="PRIORITY" data-i18n="sort_priority">Prioridad</option>
-          <option value="EVENT_DESC" data-i18n="sort_event">Evento (m&aacute;s reciente)</option>
-          <option value="ADDED_DESC" data-i18n="sort_added">Fecha agregado</option>
-          <option value="ORDER_ASC" data-i18n="sort_order">Orden (A&#8594;Z)</option>
-          <option value="TRAILER_ASC" data-i18n="sort_trailer">Remolque (A&#8594;Z)</option>
+          <option value="PRIORITY">Priority</option>
+          <option value="EVENT_DESC">Event (latest)</option>
+          <option value="ADDED_DESC">Date Added</option>
+          <option value="ORDER_ASC">Order (A&#8594;Z)</option>
+          <option value="TRAILER_ASC">Trailer (A&#8594;Z)</option>
         </select>
         <button id="exportBtn" class="export-btn">
           <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-          <span data-i18n="export_csv">Exportar CSV</span>
+          <span>Export CSV</span>
         </button>
       </div>
       <div class="tr">
-        <input id="q" class="search-inp" data-i18n-ph="search_ph" placeholder="Buscar orden o remolque&hellip;" aria-label="Search" />
+        <input id="q" class="search-inp" placeholder="Search order or trailer..." aria-label="Search" />
       </div>
     </div>
 
     <!-- Filter bar -->
     <div class="filter-bar">
-      <button class="filter-btn filter-all on" data-f="all" data-i18n="filter_all">Todos</button>
+      <button class="filter-btn filter-all on" data-f="all">All</button>
       <button class="filter-btn filter-verde" data-f="verde">&#11044; VERDE</button>
       <button class="filter-btn filter-rojo"  data-f="rojo">&#11044; ROJO</button>
-      <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDIENTE</button>
+      <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDING</button>
       <span id="showingInfo" class="showing-info"></span>
     </div>
 
@@ -357,11 +363,11 @@
       <thead>
         <tr>
           <th style="width:44px"></th>
-          <th style="width:125px" data-i18n="col_order">Orden</th>
-          <th style="width:145px" data-i18n="col_trailer">Remolque / Placas</th>
-          <th data-i18n="col_status">Estatus</th>
-          <th class="notes-col" style="width:170px" data-i18n="col_notes">Notas</th>
-          <th style="width:95px;text-align:right" data-i18n="col_actions">Acciones</th>
+          <th style="width:125px">Order</th>
+          <th style="width:145px">Trailer / Plates</th>
+          <th>Status</th>
+          <th class="notes-col" style="width:170px">Notes</th>
+          <th style="width:95px;text-align:right">Actions</th>
         </tr>
       </thead>
       <tbody id="tbody">
@@ -402,7 +408,7 @@
             {% set grp = 'pend' %}
           {% endif %}
 
-          {# Inspeccionado: currently verde AND previously had MEX_RED, OR is MEX_RED_DONE #}
+          {# Inspected: currently verde AND previously had MEX_RED, OR is MEX_RED_DONE #}
           {% set is_insp = (sk == 'MEX_RED_DONE') or (grp == 'verde' and o.had_rojo) %}
 
           <tr class="row {{ rc }}"
@@ -419,7 +425,7 @@
             <!-- Star -->
             <td style="padding-left:18px">
               <form method="post" action="{{ url_for('toggle_star_route', order_no=o.order_no) }}" style="margin:0">
-                <button class="icon-btn" type="submit" title="{{ 'Quitar destacado' if o.starred else 'Destacar' }}" aria-label="Toggle star">
+                <button class="icon-btn" type="submit" title="{{ 'Unstar' if o.starred else 'Star' }}" aria-label="Toggle star">
                   <svg viewBox="0 0 24 24" style="fill:{{ '#f59e0b' if o.starred else 'var(--muted)' }}">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                   </svg>
@@ -436,13 +442,13 @@
             <!-- Status badge -->
             <td>
               {% if is_insp %}
-                <span class="badge b-insp" data-badge-type="insp">&#x1F6A8; Inspeccionado</span>
+                <span class="badge b-insp" data-badge-type="insp">&#x1F6A8; Inspected</span>
               {% elif grp == 'verde' %}
-                <span class="badge b-verde" data-badge-type="verde">VERDE / LIBERADO</span>
+                <span class="badge b-verde" data-badge-type="verde">VERDE / CLEARED</span>
               {% elif sk == 'MEX_RED' %}
-                <span class="badge b-rojo" data-badge-type="rojo">ROJO MEXICANO</span>
+                <span class="badge b-rojo" data-badge-type="rojo">ROJO / MX RED</span>
               {% else %}
-                <span class="badge b-pend" data-badge-type="pend">PENDIENTE</span>
+                <span class="badge b-pend" data-badge-type="pend">PENDING</span>
               {% endif %}
               {% if last_label %}
                 <div class="status-detail">{{ last_label }}{% if last_crossed %} &middot; {{ last_crossed }}{% endif %}</div>
@@ -453,14 +459,14 @@
             <td class="notes-td">
               <div class="notes-view">
                 <span class="notes-text">{{ o.notes or '' }}</span>
-                <button class="note-pencil" data-order="{{ o.order_no }}" title="Editar nota" aria-label="Editar nota">
+                <button class="note-pencil" data-order="{{ o.order_no }}" title="Edit note" aria-label="Edit note">
                   <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                 </button>
               </div>
               <div class="notes-edit-wrap">
-                <input type="text" class="notes-input" value="{{ o.notes|e }}" data-i18n-ph="notes_ph" placeholder="Agregar nota&hellip;" />
-                <button class="note-save" data-order="{{ o.order_no }}" title="Guardar">&#10003;</button>
-                <button class="note-cancel" title="Cancelar">&#10005;</button>
+                <input type="text" class="notes-input" value="{{ o.notes|e }}" placeholder="Add a note..." />
+                <button class="note-save" data-order="{{ o.order_no }}" title="Save">&#10003;</button>
+                <button class="note-cancel" title="Cancel">&#10005;</button>
               </div>
             </td>
 
@@ -469,13 +475,13 @@
               <div class="actions">
                 {% set lnk = (o.links[0].url if o.links|length > 0 else '') %}
                 {% if lnk %}
-                  <a class="icon-btn" href="{{ lnk }}" target="_blank" rel="noopener noreferrer" title="Abrir enlace">
+                  <a class="icon-btn" href="{{ lnk }}" target="_blank" rel="noopener noreferrer" title="Open link">
                     <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"/><path d="M5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>
                   </a>
                 {% endif %}
                 <form style="margin:0" method="post" action="{{ url_for('delete_order_route', order_no=o.order_no) }}"
                       onsubmit="return confirmDel('{{ o.order_no }}')">
-                  <button class="icon-btn icon-btn-del" type="submit" title="Eliminar" aria-label="Eliminar">
+                  <button class="icon-btn icon-btn-del" type="submit" title="Delete" aria-label="Delete">
                     <svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM7 9h2v10H7V9z"/></svg>
                   </button>
                 </form>
@@ -498,8 +504,8 @@
                   <path d="M48 42L60 42" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                   <path d="M40 13C37 5 28 2 26 7 30 9 35 11 40 13 45 11 50 9 54 7 52 2 43 5 40 13Z" fill="rgba(255,179,0,0.22)" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <div class="empty-title" data-i18n="empty_title">&#161;Let&#39;s Go Kill It!</div>
-                <div class="empty-sub" data-i18n="empty_sub">No hay DODAs en seguimiento &mdash; sube uno arriba.</div>
+                <div class="empty-title" >Let's Go Kill It!</div>
+                <div class="empty-sub" >No DODAs being tracked &mdash; upload one above.</div>
               </div>
             </td>
           </tr>
@@ -510,9 +516,9 @@
 
     <!-- Pagination footer -->
     <div class="table-footer" id="tableFooter" style="display:none">
-      <button id="prevBtn" class="page-btn" disabled data-i18n="prev">&#8592; Anterior</button>
+      <button id="prevBtn" class="page-btn" disabled >&#8592; Prev</button>
       <span id="pageInfo" class="page-info"></span>
-      <button id="nextBtn" class="page-btn" data-i18n="next">Siguiente &#8594;</button>
+      <button id="nextBtn" class="page-btn" >Next &#8594;</button>
     </div>
 
   </div>
@@ -520,106 +526,8 @@
 </main>
 
 <script>
-/* ══════════════════════════════════════════════
-   TRANSLATIONS
-══════════════════════════════════════════════ */
-var T = {
-  es: {
-    drag_title: 'Arrastra &amp; Suelta tu DODA PDF aqu\u00ed o <span class="drop-browse">haz clic para buscar</span>',
-    form_header: 'Subir DODA PDF',
-    order_label: 'N\u00famero de Orden', order_ph: 'N\u00famero de 6 d\u00edgitos',
-    order_err: 'Debe ser exactamente 6 d\u00edgitos (solo n\u00fameros).',
-    id_label: 'Identificador', id_ph: 'Ingresa el valor',
-    opt_trailer: 'Remolque', opt_plates: 'Placas',
-    submit: 'Enviar', change_file: '\u21a9 Cambiar archivo',
-    export_csv: 'Exportar CSV', search_ph: 'Buscar orden o remolque\u2026',
-    filter_all: 'Todos',
-    col_order: 'Orden', col_trailer: 'Remolque / Placas', col_status: 'Estatus',
-    col_notes: 'Notas', col_actions: 'Acciones',
-    badge_verde: 'VERDE / LIBERADO', badge_rojo: 'ROJO MEXICANO',
-    badge_pend: 'PENDIENTE', badge_insp: '&#x1F6A8; Inspeccionado',
-    empty_title: '\u00a1Let\'s Go Kill It!',
-    empty_sub: 'No hay DODAs en seguimiento \u2014 sube uno arriba.',
-    no_match: 'Ninguna orden coincide con los filtros.',
-    notes_ph: 'Agregar nota\u2026',
-    prev: '\u2190 Anterior', next: 'Siguiente \u2192',
-    sort_priority: 'Prioridad', sort_event: 'Evento (m\u00e1s reciente)',
-    sort_added: 'Fecha agregado', sort_order: 'Orden (A\u2192Z)', sort_trailer: 'Remolque (A\u2192Z)',
-    showing: 'Mostrando {0}\u2013{1} de {2}', no_found: 'Sin resultados',
-    page_of: 'P\u00e1gina {0} de {1}',
-    del_confirm: '\u00bfEliminar orden {0}?',
-    refresh_ready: 'Verificaciones cada 15 min \u00b7 Listo',
-    refresh_last: '\u00daltima actualiz. {0} \u00b7 Siguiente en {1}',
-    refresh_ready2: '\u00daltima actualiz. {0} \u00b7 Listo',
-  },
-  en: {
-    drag_title: 'Drag &amp; Drop DODA PDF here or <span class="drop-browse">click to browse</span>',
-    form_header: 'Upload DODA PDF',
-    order_label: 'Order Number', order_ph: '6-digit order number',
-    order_err: 'Must be exactly 6 digits (numbers only).',
-    id_label: 'Identifier', id_ph: 'Enter value',
-    opt_trailer: 'Trailer', opt_plates: 'Plates',
-    submit: 'Submit', change_file: '\u21a9 Change file',
-    export_csv: 'Export CSV', search_ph: 'Search order or trailer\u2026',
-    filter_all: 'All',
-    col_order: 'Order', col_trailer: 'Trailer / Plates', col_status: 'Status',
-    col_notes: 'Notes', col_actions: 'Actions',
-    badge_verde: 'VERDE / LIBERADO', badge_rojo: 'ROJO MEXICANO',
-    badge_pend: 'PENDING', badge_insp: '&#x1F6A8; Inspected',
-    empty_title: "Let's Go Kill It!",
-    empty_sub: 'No DODAs being tracked yet \u2014 upload one above.',
-    no_match: 'No orders match your current filters.',
-    notes_ph: 'Add a note\u2026',
-    prev: '\u2190 Prev', next: 'Next \u2192',
-    sort_priority: 'Priority', sort_event: 'Event time (latest)',
-    sort_added: 'Date added (latest)', sort_order: 'Order (A\u2192Z)', sort_trailer: 'Trailer (A\u2192Z)',
-    showing: 'Showing {0}\u2013{1} of {2}', no_found: 'No orders found',
-    page_of: 'Page {0} of {1}',
-    del_confirm: 'Delete order {0}?',
-    refresh_ready: 'Auto-checks every 15 min \u00b7 Ready',
-    refresh_last: 'Last refresh {0} \u00b7 Next manual in {1}',
-    refresh_ready2: 'Last refresh {0} \u00b7 Ready',
-  }
-};
 
-var lang = localStorage.getItem('dodaLang') || 'es';
 
-function fmt(tpl) {
-  var args = Array.prototype.slice.call(arguments, 1);
-  return tpl.replace(/\\{(\\d+)\\}/g, function(_, i){ return args[i] !== undefined ? args[i] : ''; });
-}
-
-function applyLang(l) {
-  lang = l;
-  localStorage.setItem('dodaLang', l);
-  var t = T[l];
-  // data-i18n text
-  document.querySelectorAll('[data-i18n]').forEach(function(el){
-    var k = el.dataset.i18n;
-    if (t[k] !== undefined) el.innerHTML = t[k];
-  });
-  // data-i18n-ph placeholders
-  document.querySelectorAll('[data-i18n-ph]').forEach(function(el){
-    var k = el.dataset.i18nPh;
-    if (t[k] !== undefined) el.placeholder = t[k];
-  });
-  // Drop title (contains HTML)
-  var dt = document.getElementById('dropTitle');
-  if (dt) dt.innerHTML = t.drag_title;
-  // Badges (data-badge-type)
-  document.querySelectorAll('[data-badge-type]').forEach(function(el){
-    var k = 'badge_' + el.dataset.badgeType;
-    if (t[k] !== undefined) el.innerHTML = t[k];
-  });
-  // Lang toggle indicator
-  document.getElementById('lEN').style.fontWeight = l === 'en' ? '800' : '400';
-  document.getElementById('lES').style.fontWeight = l === 'es' ? '800' : '400';
-  apply(); // Re-render showing/page info with new lang
-}
-
-document.getElementById('langBtn').addEventListener('click', function(){
-  applyLang(lang === 'es' ? 'en' : 'es');
-});
 
 /* ══════════════════════════════════════════════
    DARK / LIGHT THEME
@@ -660,7 +568,7 @@ var droppedFile   = null;  // fallback if DataTransfer assignment fails
 
 function showPDF(file) {
   if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
-    alert('Por favor selecciona un archivo PDF.');
+    alert('Please select a PDF file.');
     return;
   }
   if (blobURL) { URL.revokeObjectURL(blobURL); }
@@ -776,7 +684,7 @@ uploadForm.addEventListener('submit', function(e) {
     return;
   }
   if (!realFileInput.files || !realFileInput.files.length) {
-    e.preventDefault(); alert('Por favor selecciona un archivo PDF primero.');
+    e.preventDefault(); alert('Please select a PDF file first.');
   }
 });
 
@@ -784,7 +692,7 @@ uploadForm.addEventListener('submit', function(e) {
    CONFIRM DELETE (language-aware)
 ══════════════════════════════════════════════ */
 function confirmDel(orderNo) {
-  return confirm(fmt(T[lang].del_confirm, orderNo));
+  return confirm('Delete order ' + orderNo + '?');
 }
 
 /* ══════════════════════════════════════════════
@@ -801,14 +709,13 @@ function tick() {
   if (!el) return;
   var now = Math.floor(Date.now() / 1000);
   var rem = lastManual ? Math.max(0, 300 - (now - lastManual)) : 0;
-  var t = T[lang];
   if (!lastManual) {
-    el.textContent = t.refresh_ready;
+    el.textContent = 'Auto-checks every 15 min · Ready';
   } else if (rem > 0) {
     var m = Math.floor(rem/60), s = rem % 60;
-    el.textContent = fmt(t.refresh_last, fmtTime(lastManual), m + ':' + String(s).padStart(2,'0'));
+    el.textContent = 'Last refresh ' + fmtTime(lastManual) + ' · Next manual in ' + m + ':' + String(s).padStart(2,'0');
   } else {
-    el.textContent = fmt(t.refresh_ready2, fmtTime(lastManual));
+    el.textContent = 'Last refresh ' + fmtTime(lastManual) + ' · Ready';
   }
 }
 tick();
@@ -868,13 +775,12 @@ function apply() {
   var end      = Math.min(start + PAGE_SIZE, total);
   var pageRows = list.slice(start, end);
 
-  var t = T[lang];
   var info = document.getElementById('showingInfo');
-  if (info) info.textContent = total === 0 ? t.no_found : fmt(t.showing, start+1, end, total);
+  if (info) info.textContent = total === 0 ? 'No orders found' : 'Showing ' + (start+1) + '–' + end + ' of ' + total;
 
   if (tableFooter) tableFooter.style.display = total > PAGE_SIZE ? '' : 'none';
   var pi = document.getElementById('pageInfo');
-  if (pi) pi.textContent = fmt(t.page_of, currentPage, totalPages);
+  if (pi) pi.textContent = 'Page ' + currentPage + ' of ' + totalPages;
   var prev = document.getElementById('prevBtn');
   var next = document.getElementById('nextBtn');
   if (prev) prev.disabled = currentPage <= 1;
@@ -916,8 +822,7 @@ document.querySelectorAll('.filter-btn').forEach(function(btn) {
    EXPORT CSV
 ══════════════════════════════════════════════ */
 document.getElementById('exportBtn').addEventListener('click', function() {
-  var t = T[lang];
-  var headers = [t.col_order, t.col_trailer, 'Status Code', t.col_status+' Detail', 'Date Added', t.col_notes];
+  var headers = ['Order', 'Trailer / Plates', 'Status Code', 'Status Detail', 'Date Added', 'Notes'];
   var csvRows = [headers];
   currentList.forEach(function(r) {
     csvRows.push([
@@ -990,7 +895,6 @@ document.addEventListener('keydown', function(e) {
 /* ══════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════ */
-applyLang(lang);   // Apply saved/default language
 apply();           // Initial table render
 </script>
 </body>

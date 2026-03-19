@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "Map Spanish status phrases found on DODA pages to normalized statuses.",
+  "notes": "Maps SAT status phrases found on DODA pages to normalized statuses.",
   "priorities": [
     "CLEARED",
     "MEX_RED_DONE",
@@ -19,14 +19,14 @@
     {
       "phrase": "RECONOCIMIENTO ADUANERO",
       "status": "MEX_RED",
-      "label": "Rojo Mexicano",
+      "label": "MX Red Lane",
       "cleared": false,
       "severity": "warn"
     },
     {
       "phrase": "RECONOCIMIENTO ADUANERO CONCLUIDO",
       "status": "MEX_RED_DONE",
-      "label": "Rojo Mexicano / Liberado",
+      "label": "MX Red Lane / Released",
       "cleared": false,
       "severity": "info"
     },

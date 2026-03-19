@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 
-def render_page_to_bgr(page: fitz.Page, zoom: float = 2.0) -> np.ndarray:
+def render_page_to_bgr(page: fitz.Page, zoom: float = 3.0) -> np.ndarray:
     mat = fitz.Matrix(zoom, zoom)
     pix = page.get_pixmap(matrix=mat, alpha=False)
     img = np.frombuffer(pix.samples, dtype=np.uint8)
@@ -26,14 +26,15 @@ def extract_qr_links_from_pdf(pdf_path: Path) -> list[str]:
     with fitz.open(pdf_path) as doc:
         for i in range(doc.page_count):
             page = doc.load_page(i)
-            bgr = render_page_to_bgr(page)
+            # First attempt at zoom 3.0
+            bgr = render_page_to_bgr(page, zoom=3.0)
             payloads = decode_qr_from_image(bgr)
+            # Fallback: retry at zoom 4.0 if nothing found
+            if not payloads:
+                bgr = render_page_to_bgr(page, zoom=4.0)
+                payloads = decode_qr_from_image(bgr)
             for payload in payloads:
-                if payload.startswith('http://') or payload.startswith('https://'):
-                    results.append(payload)
-                else:
-                    # still store non-http payloads; might be useful
-                    results.append(payload)
+                results.append(payload)
 
     # dedupe preserve order
     out = []
