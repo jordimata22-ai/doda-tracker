@@ -210,15 +210,6 @@
     .empty-title{font-size:22px;font-weight:800;color:var(--text);}
     .empty-sub{font-size:14px;color:var(--muted);}
 
-    /* ── MOTIVATIONAL BUTTON ─────────────────── */
-    @keyframes fadeInPhrase{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
-    .fired-phrase{font-size:14px;font-weight:600;color:var(--hl);text-align:center;min-height:1.4em;opacity:0;}
-    .fired-phrase.show{opacity:1;animation:fadeInPhrase .4s ease-out both;}
-    .fire-btn{background:#0066CC;color:#fff;border:none;border-radius:999px;padding:12px 32px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .2s,transform .1s;letter-spacing:.02em;}
-    .fire-btn:hover:not(:disabled){background:#0077EE;}
-    .fire-btn:active:not(:disabled){transform:scale(.97);}
-    .fire-btn:disabled{opacity:.7;cursor:not-allowed;}
-
     /* ── CONFIRM MODAL INPUTS ────────────────── */
     .conf-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(0,170,255,.2);border-radius:8px;color:#fff;padding:10px 13px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;}
     .conf-input::placeholder{color:#A0AEC0;opacity:.7;}
@@ -527,13 +518,18 @@
           <tr id="dbEmptyRow">
             <td colspan="6">
               <div class="empty">
-                <img src="{{ url_for('static', filename='helmet.svg') }}"
-                     width="120" height="120" alt="Gladiator helmet"
-                     style="opacity:0.85;display:block;" />
-                <div class="empty-title">Let's Go Kill It!</div>
-                <div class="empty-sub">No DODAs being tracked &mdash; upload one above.</div>
-                <div id="firePhrase" class="fired-phrase"></div>
-                <button id="fireBtn" class="fire-btn">GET FIRED UP</button>
+                <svg class="empty-helmet" width="76" height="76" viewBox="0 0 80 80" fill="none">
+                  <path d="M14 50C14 28 23 13 40 13 57 13 66 28 66 50" fill="rgba(0,170,255,0.07)" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M14 50L66 50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M14 50L12 64Q19 68 27 66L31 52" stroke="currentColor" stroke-width="2" fill="rgba(0,170,255,0.05)" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M66 50L68 64Q61 68 53 66L49 52" stroke="currentColor" stroke-width="2" fill="rgba(0,170,255,0.05)" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M40 50L40 62" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M20 42L32 42" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M48 42L60 42" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M40 13C37 5 28 2 26 7 30 9 35 11 40 13 45 11 50 9 54 7 52 2 43 5 40 13Z" fill="rgba(255,179,0,0.22)" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="empty-title" >Let's Go Kill It!</div>
+                <div class="empty-sub" >No DODAs being tracked &mdash; upload one above.</div>
               </div>
             </td>
           </tr>
@@ -1053,74 +1049,6 @@ document.addEventListener('keydown', function(e) {
    INIT
 ══════════════════════════════════════════════ */
 apply();           // Initial table render
-
-/* ══════════════════════════════════════════════
-   MOTIVATIONAL BUTTON
-══════════════════════════════════════════════ */
-(function() {
-  var fireBtn     = document.getElementById('fireBtn');
-  var firePhraseEl = document.getElementById('firePhrase');
-  if (!fireBtn || !firePhraseEl) return;
-
-  var PHRASES = [
-    "Borders don't stop us. Nothing does. Let's go kill it!",
-    "Another day, another crossing. Let's go kill it!",
-    "The trailers are waiting. Time to move. Let's go kill it!",
-    "Green lights only today. Let's go kill it!",
-    "We don't wait for customs. Customs waits for us. Let's go kill it!"
-  ];
-
-  fireBtn.addEventListener('click', function() {
-    var phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)];
-
-    // Fade-in phrase
-    firePhraseEl.classList.remove('show');
-    firePhraseEl.textContent = phrase;
-    void firePhraseEl.offsetWidth; // force reflow to restart animation
-    firePhraseEl.classList.add('show');
-
-    // Update button state
-    fireBtn.textContent = 'FIRED UP!';
-    fireBtn.disabled = true;
-
-    function resetBtn() {
-      fireBtn.textContent = 'GET FIRED UP';
-      fireBtn.disabled = false;
-    }
-
-    if (!window.speechSynthesis) {
-      setTimeout(resetBtn, 3000);
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    var utt = new SpeechSynthesisUtterance(phrase);
-    utt.rate   = 0.95;
-    utt.pitch  = 1.1;
-    utt.volume = 1.0;
-    utt.lang   = 'en-US';
-    utt.onend  = resetBtn;
-    utt.onerror = resetBtn;
-
-    var spoken = false;
-    function trySpeak() {
-      if (spoken) return;
-      spoken = true;
-      var voices = window.speechSynthesis.getVoices();
-      var enVoice = voices.find(function(v) { return v.lang === 'en-US'; });
-      if (enVoice) utt.voice = enVoice;
-      window.speechSynthesis.speak(utt);
-    }
-
-    var voices = window.speechSynthesis.getVoices();
-    if (voices && voices.length) {
-      trySpeak();
-    } else {
-      window.speechSynthesis.onvoiceschanged = trySpeak;
-      setTimeout(trySpeak, 400); // fallback if event never fires
-    }
-  });
-})();
 </script>
 </body>
 </html>
