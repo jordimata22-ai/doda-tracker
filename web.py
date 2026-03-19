@@ -91,7 +91,7 @@ def create_app():
     @login_required
     def upload_pdf():
         from qr_extract import extract_qr_links_from_pdf
-        from trailer_extract import extract_trailer_or_plate_from_pdf
+        # from trailer_extract import extract_trailer_or_plate_from_pdf  # disabled: manual entry only
         import tempfile
 
         order_no = (request.form.get("order_no") or "").strip()
@@ -128,7 +128,9 @@ def create_app():
                 flash(f"No QR code found in '{filename}'. File moved to _NO_QR.", "error")
                 return redirect(url_for("index"))
 
-            trailer = identifier_value if identifier_value else extract_trailer_or_plate_from_pdf(tmp_path)
+            # Auto-extraction disabled — use manually entered value only
+            trailer = identifier_value if identifier_value else None
+            # trailer = identifier_value if identifier_value else extract_trailer_or_plate_from_pdf(tmp_path)
 
             storage_dir = ROOT / "storage" / order_no
             storage_dir.mkdir(parents=True, exist_ok=True)

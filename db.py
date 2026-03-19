@@ -39,7 +39,9 @@ def init_db():
           created_at TEXT NOT NULL,
           trailer_no TEXT,
           starred INTEGER DEFAULT 0,
-          notes TEXT DEFAULT ''
+          notes TEXT DEFAULT '',
+          inspection_start TEXT,
+          inspection_end TEXT
         )
         """)
 
@@ -52,6 +54,10 @@ def init_db():
                 con.execute("ALTER TABLE orders ADD COLUMN starred INTEGER DEFAULT 0")
             if "notes" not in cols:
                 con.execute("ALTER TABLE orders ADD COLUMN notes TEXT DEFAULT ''")
+            if "inspection_start" not in cols:
+                con.execute("ALTER TABLE orders ADD COLUMN inspection_start TEXT")
+            if "inspection_end" not in cols:
+                con.execute("ALTER TABLE orders ADD COLUMN inspection_end TEXT")
         except Exception:
             pass
 
@@ -165,6 +171,26 @@ def record_check(link_id: int, url: str, status: dict):
             (now, compact or status.get("excerpt"), 1 if status.get("is_clear") else 0, event_ts_iso, link_id),
         )
 
+        # Update inspection timestamps on the orders table
+        if event_ts_iso and code in ("MEX_RED", "MEX_RED_DONE"):
+            order_row = con.execute(
+                "SELECT o.id, o.inspection_start FROM orders o "
+                "JOIN links l ON l.order_id = o.id WHERE l.id = ?",
+                (link_id,)
+            ).fetchone()
+            if order_row:
+                order_id, insp_start = order_row
+                if code == "MEX_RED" and not insp_start:
+                    con.execute(
+                        "UPDATE orders SET inspection_start=? WHERE id=?",
+                        (event_ts_iso, order_id)
+                    )
+                elif code == "MEX_RED_DONE":
+                    con.execute(
+                        "UPDATE orders SET inspection_end=? WHERE id=?",
+                        (event_ts_iso, order_id)
+                    )
+
 
 def toggle_star(order_no: str) -> int:
     with connect() as con:
@@ -197,6 +223,31 @@ def delete_order(order_no: str) -> dict:
         return {"pdf_path": pdf_path}
 
 
+def _parse_sat_ts(ts: str | None):
+    """Parse a SAT ISO timestamp string (no timezone) into a datetime, or None."""
+    if not ts:
+        return None
+    try:
+        from datetime import datetime as _dt
+        return _dt.fromisoformat(ts)
+    except Exception:
+        return None
+
+
+def _fmt_sat_ts(ts: str | None) -> str | None:
+    """Format a SAT ISO timestamp for display: '01/25 10:10am'."""
+    dt = _parse_sat_ts(ts)
+    if not dt:
+        return None
+    try:
+        h = dt.hour
+        ampm = "am" if h < 12 else "pm"
+        h12 = h % 12 or 12
+        return f"{dt.month:02d}/{dt.day:02d} {h12}:{dt.minute:02d}{ampm}"
+    except Exception:
+        return ts
+
+
 def get_order_summary(order_no: str) -> dict | None:
     with connect() as con:
         cur = con.execute(
@@ -227,6 +278,7 @@ def list_orders() -> list[dict]:
         cur = con.execute(
             """
             SELECT o.order_no, o.pdf_path, o.created_at, o.trailer_no, o.starred, o.notes,
+                   o.inspection_start, o.inspection_end,
                    l.url, l.last_checked, l.last_is_clear, l.last_status, l.last_event_ts
             FROM orders o
             LEFT JOIN links l ON l.order_id = o.id
@@ -251,7 +303,7 @@ def list_orders() -> list[dict]:
 
     # group by order
     by = {}
-    for order_no, pdf_path, created_at, trailer_no, starred, notes, url, last_checked, last_is_clear, last_status, last_event_ts in rows:
+    for order_no, pdf_path, created_at, trailer_no, starred, notes, inspection_start, inspection_end, url, last_checked, last_is_clear, last_status, last_event_ts in rows:
         o = by.setdefault(order_no, {
             "order_no": order_no,
             "pdf_path": pdf_path,
@@ -261,6 +313,8 @@ def list_orders() -> list[dict]:
             "starred": int(starred or 0),
             "notes": notes or "",
             "had_rojo": order_no in had_rojo_set,
+            "inspection_start": inspection_start,
+            "inspection_end": inspection_end,
             "links": [],
         })
         if url:
@@ -279,5 +333,21 @@ def list_orders() -> list[dict]:
 
     for o in by.values():
         o["links"].sort(key=key, reverse=True)
+
+        # Compute inspection duration / since for display
+        start_dt = _parse_sat_ts(o.get("inspection_start"))
+        end_dt   = _parse_sat_ts(o.get("inspection_end"))
+        if start_dt and end_dt:
+            secs = max(0, int((end_dt - start_dt).total_seconds()))
+            hrs  = secs // 3600
+            mins = (secs % 3600) // 60
+            o["inspection_duration"] = f"{hrs}h {mins}min" if hrs else f"{mins}min"
+            o["inspection_since"]    = None
+        elif start_dt:
+            o["inspection_duration"] = None
+            o["inspection_since"]    = _fmt_sat_ts(o.get("inspection_start"))
+        else:
+            o["inspection_duration"] = None
+            o["inspection_since"]    = None
 
     return [o for o in by.values() if o.get("links")]

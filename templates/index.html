@@ -210,6 +210,16 @@
     .empty-title{font-size:22px;font-weight:800;color:var(--text);}
     .empty-sub{font-size:14px;color:var(--muted);}
 
+    /* ── CONFIRM MODAL INPUTS ────────────────── */
+    .conf-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(0,170,255,.2);border-radius:8px;color:#fff;padding:10px 13px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;}
+    .conf-input::placeholder{color:#A0AEC0;opacity:.7;}
+    .conf-input:focus{border-color:#0066CC;}
+    .conf-input.err{border-color:#FF3B30;}
+    .conf-select{width:100%;background:#1a2a3a;border:1px solid rgba(0,170,255,.2);border-radius:8px;color:#fff;padding:10px 13px;font-size:14px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .2s;}
+    .conf-select:focus{border-color:#0066CC;}
+    [data-theme="light"] .conf-input{background:rgba(0,0,0,.06);color:#0A1628;}
+    [data-theme="light"] .conf-select{background:#b8d4e8;color:#0A1628;}
+
     /* ── FILTER COUNTS ───────────────────────── */
     .f-cnt{font-weight:600;opacity:.8;margin-left:3px;}
 
@@ -314,7 +324,7 @@
           </div>
         </div>
 
-        <button type="submit" class="submit-btn">Submit</button>
+        <button type="submit" class="submit-btn">Review &amp; Upload</button>
       </form>
 
       <button type="button" class="change-btn" id="changeBtn" >&#8629; Change file</button>
@@ -449,10 +459,18 @@
             <td>
               {% if is_insp %}
                 <span class="badge b-insp" data-badge-type="insp">&#x1F6A8; Inspected</span>
+                {% if o.inspection_duration %}
+                  <div class="status-detail">Inspection Duration: {{ o.inspection_duration }}</div>
+                {% elif o.inspection_since %}
+                  <div class="status-detail">In inspection since {{ o.inspection_since }}</div>
+                {% endif %}
               {% elif grp == 'verde' %}
                 <span class="badge b-verde" data-badge-type="verde">CLEARED</span>
               {% elif sk == 'MEX_RED' %}
                 <span class="badge b-rojo" data-badge-type="rojo">INSPECTION</span>
+                {% if o.inspection_since %}
+                  <div class="status-detail">In inspection since {{ o.inspection_since }}</div>
+                {% endif %}
               {% else %}
                 <span class="badge b-pend" data-badge-type="pend">PENDING</span>
               {% endif %}
@@ -530,6 +548,37 @@
   </div>
 
 </main>
+
+<!-- ══ CONFIRM UPLOAD MODAL ══════════════════════ -->
+<div id="confModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.65);align-items:center;justify-content:center;">
+  <div style="background:#112A40;border:1px solid #0066CC;border-radius:12px;padding:32px;max-width:440px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.5);">
+    <div style="font-size:16px;font-weight:800;margin-bottom:20px;color:#fff;">Confirm Shipment Details</div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Order Number</label>
+      <input type="text" id="confOrder" class="conf-input" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="6-digit order number" />
+      <span id="confOrderErr" style="display:none;font-size:11px;color:#FF3B30;margin-top:4px;">Must be exactly 6 digits (numbers only).</span>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Identifier Type</label>
+      <select id="confIdType" class="conf-select">
+        <option value="trailer">Trailer</option>
+        <option value="plates">Plates</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Identifier Value</label>
+      <input type="text" id="confIdValue" class="conf-input" autocomplete="off" placeholder="Enter trailer or plate number" />
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button id="confCancel" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#A0AEC0;padding:10px 20px;font-size:13px;font-family:inherit;cursor:pointer;">Cancel</button>
+      <button id="confSave" style="background:#0066CC;border:none;border-radius:8px;color:#fff;padding:10px 20px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">Confirm &amp; Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ DUPLICATE ORDER MODAL ════════════════════ -->
 <div id="dupModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.65);align-items:center;justify-content:center;">
@@ -686,6 +735,70 @@ orderInput.addEventListener('input', function() {
 });
 
 /* ══════════════════════════════════════════════
+   CONFIRM UPLOAD MODAL
+══════════════════════════════════════════════ */
+var confModal     = document.getElementById('confModal');
+var confOrderInp  = document.getElementById('confOrder');
+var confOrderErr  = document.getElementById('confOrderErr');
+var confIdType    = document.getElementById('confIdType');
+var confIdValue   = document.getElementById('confIdValue');
+var confCancel    = document.getElementById('confCancel');
+var confSave      = document.getElementById('confSave');
+
+function showConfModal() {
+  confOrderInp.value = orderInput.value || '';
+  confIdType.value   = document.getElementById('idType').value || 'trailer';
+  confIdValue.value  = '';  // never pre-fill — manual entry only
+  confOrderInp.classList.remove('err');
+  confOrderErr.style.display = 'none';
+  confModal.style.display = 'flex';
+  setTimeout(function(){ confOrderInp.focus(); }, 50);
+}
+
+function hideConfModal() {
+  confModal.style.display = 'none';
+}
+
+confCancel.addEventListener('click', function() {
+  hideConfModal();
+  changeBtn.click();  // reset to drop zone
+});
+confModal.addEventListener('click', function(e) { if (e.target === confModal) hideConfModal(); });
+
+confOrderInp.addEventListener('input', function() {
+  if (confOrderInp.value.length > 0 && !validateOrder(confOrderInp.value)) {
+    confOrderInp.classList.add('err');
+    confOrderErr.style.display = 'block';
+  } else {
+    confOrderInp.classList.remove('err');
+    confOrderErr.style.display = 'none';
+  }
+});
+
+confSave.addEventListener('click', function() {
+  if (!validateOrder(confOrderInp.value)) {
+    confOrderInp.classList.add('err');
+    confOrderErr.style.display = 'block';
+    confOrderInp.focus();
+    return;
+  }
+  // Copy modal values into hidden form fields
+  orderInput.value = confOrderInp.value;
+  document.getElementById('idType').value  = confIdType.value;
+  document.getElementById('idValue').value = confIdValue.value;
+  hideConfModal();
+  // Duplicate check then upload
+  var orderNo = confOrderInp.value.trim();
+  fetch('/check-order/' + encodeURIComponent(orderNo))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.exists) { showDupModal(data); }
+      else             { doUpload(); }
+    })
+    .catch(function() { doUpload(); });
+});
+
+/* ══════════════════════════════════════════════
    DUPLICATE ORDER CHECK MODAL
 ══════════════════════════════════════════════ */
 var dupModal   = document.getElementById('dupModal');
@@ -733,26 +846,8 @@ function doUpload() {
 
 uploadForm.addEventListener('submit', function(e) {
   e.preventDefault();
-  if (!validateOrder(orderInput.value)) {
-    orderInput.classList.add('err'); orderErr.classList.add('show'); orderInput.focus();
-    return;
-  }
-  if (replaceConfirmed) {
-    replaceConfirmed = false;
-    doUpload();
-    return;
-  }
-  var orderNo = orderInput.value.trim();
-  fetch('/check-order/' + encodeURIComponent(orderNo))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.exists) {
-        showDupModal(data);
-      } else {
-        doUpload();
-      }
-    })
-    .catch(function() { doUpload(); });
+  // Show confirmation modal — it handles validation, duplicate check, and submission
+  showConfModal();
 });
 
 /* ══════════════════════════════════════════════

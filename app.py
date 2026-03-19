@@ -13,7 +13,7 @@ from web import create_app
 from db import init_db, upsert_order_with_pdf, add_links
 from prompt import prompt_order_number, notify, confirm
 from qr_extract import extract_qr_links_from_pdf
-from trailer_extract import extract_trailer_or_plate_from_pdf
+# from trailer_extract import extract_trailer_or_plate_from_pdf  # disabled: manual entry only
 from checks_runner import run_checks_once
 
 
@@ -117,31 +117,17 @@ class InboxHandler(FileSystemEventHandler):
                 )
                 return
 
-            # 2) We have links → extract trailer/plate from the PDF and auto-confirm
-            trailer = extract_trailer_or_plate_from_pdf(p)
-            if trailer:
-                ok = confirm(
-                    title="Confirm trailer/plates",
-                    message=f"Is this the trailer/plates number?\n\n{trailer}",
-                )
-                if not ok:
-                    notify(
-                        title="Request Correction",
-                        message=(
-                            "Request Correction.\n\n"
-                            f"Trailer/plates shown on DODA: {trailer}\n\n"
-                            "(We do not edit the trailer number here.)"
-                        ),
-                    )
-            else:
-                notify(
-                    title="Request Correction",
-                    message=(
-                        "Trailer/plates number could not be detected automatically.\n\n"
-                        "Request Correction."
-                    ),
-                )
-                trailer = None
+            # 2) Trailer extraction disabled — manual entry only
+            trailer = None
+            # # disabled: auto extract trailer/plate from PDF
+            # trailer = extract_trailer_or_plate_from_pdf(p)
+            # if trailer:
+            #     ok = confirm(title="Confirm trailer/plates", message=f"Is this the trailer/plates number?\n\n{trailer}")
+            #     if not ok:
+            #         notify(title="Request Correction", message=f"Trailer/plates shown on DODA: {trailer}\n\n(We do not edit the trailer number here.)")
+            # else:
+            #     notify(title="Request Correction", message="Trailer/plates number could not be detected automatically.\n\nRequest Correction.")
+            #     trailer = None
 
             # 3) Prompt for order number, then store + track
             order_no = prompt_order_number(
