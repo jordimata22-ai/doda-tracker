@@ -842,22 +842,41 @@ function fmtTime(s) {
   return new Date(s * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
+var lastCheckedIso = null;
+
+function fmtAgo(isoStr) {
+  if (!isoStr) return null;
+  var diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff === 1) return '1 min ago';
+  return diff + ' min ago';
+}
+
+function fetchLastChecked() {
+  fetch('/last-checked').then(function(r){ return r.json(); }).then(function(d){
+    lastCheckedIso = d.last_checked || null;
+    tick();
+  }).catch(function(){});
+}
+
 function tick() {
   var el = document.getElementById('refreshMeta');
   if (!el) return;
   var now = Math.floor(Date.now() / 1000);
   var rem = lastManual ? Math.max(0, 300 - (now - lastManual)) : 0;
+  var checkedPart = lastCheckedIso ? ' · Last checked: ' + fmtAgo(lastCheckedIso) : '';
   if (!lastManual) {
-    el.textContent = 'Auto-checks every 15 min · Ready';
+    el.textContent = 'Auto-checks every 15 min' + checkedPart;
   } else if (rem > 0) {
     var m = Math.floor(rem/60), s = rem % 60;
-    el.textContent = 'Last refresh ' + fmtTime(lastManual) + ' · Next manual in ' + m + ':' + String(s).padStart(2,'0');
+    el.textContent = 'Last refresh ' + fmtTime(lastManual) + ' · Next manual in ' + m + ':' + String(s).padStart(2,'0') + checkedPart;
   } else {
-    el.textContent = 'Last refresh ' + fmtTime(lastManual) + ' · Ready';
+    el.textContent = 'Last refresh ' + fmtTime(lastManual) + ' · Ready' + checkedPart;
   }
 }
-tick();
+fetchLastChecked();
 setInterval(tick, 1000);
+setInterval(fetchLastChecked, 60000);
 
 /* ══════════════════════════════════════════════
    SEARCH + FILTER + SORT + PAGINATE

@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 
 from watchdog.observers import Observer
@@ -15,6 +16,8 @@ from prompt import prompt_order_number, notify, confirm
 from qr_extract import extract_qr_links_from_pdf
 # from trailer_extract import extract_trailer_or_plate_from_pdf  # disabled: manual entry only
 from checks_runner import run_checks_once
+
+last_checked_time: str | None = None
 
 
 def app_root() -> Path:
@@ -157,10 +160,12 @@ class InboxHandler(FileSystemEventHandler):
 
 
 def checker_loop(cfg):
+    global last_checked_time
     interval = max(1, int(cfg.get("intervalMinutes", 15))) * 60
     while True:
         try:
             run_checks_once()
+            last_checked_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         except Exception as e:
             logging.error("Checker error: %s", e)
 
@@ -199,6 +204,12 @@ _observer = _start_background(_cfg)
 
 # WSGI application object used by gunicorn:  `gunicorn app:app`
 app = create_app()
+
+
+@app.get("/last-checked")
+def last_checked():
+    from flask import jsonify
+    return jsonify({"last_checked": last_checked_time})
 
 
 def main():
