@@ -172,8 +172,20 @@ def checker_loop(cfg):
         time.sleep(interval)
 
 
+_bg_started = False
+_bg_lock = threading.Lock()
+
+
 def _start_background(cfg):
-    """Start checker thread and watchdog observer. Safe to call at module import."""
+    """Start checker thread and watchdog observer. Idempotent — safe to call multiple times."""
+    global _bg_started
+    with _bg_lock:
+        if _bg_started:
+            return None
+        _bg_started = True
+
+    logging.info("Starting background checker thread (pid=%s)", os.getpid())
+
     # Checker thread
     t = threading.Thread(target=checker_loop, args=(cfg,), daemon=True)
     t.start()
@@ -200,7 +212,7 @@ _cfg = load_config()
 init_db()
 from db import normalize_urls
 normalize_urls()
-_observer = _start_background(_cfg)
+_observer = None  # started by gunicorn post_fork hook (gunicorn.conf.py) or main() below
 
 # WSGI application object used by gunicorn:  `gunicorn app:app`
 app = create_app()
@@ -214,6 +226,8 @@ def last_checked():
 
 def main():
     """Entry point for local `python app.py` usage."""
+    global _observer
+    _observer = _start_background(_cfg)
     host = os.environ.get("HOST", _cfg["dashboard"].get("host", "0.0.0.0"))
     port = int(os.environ.get("PORT", _cfg["dashboard"].get("port", 8787)))
     print(f"Dashboard: http://{host}:{port}")

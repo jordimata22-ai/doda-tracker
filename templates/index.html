@@ -843,6 +843,7 @@ function fmtTime(s) {
 }
 
 var lastCheckedIso = null;
+var lastSeenCheckedIso = null;
 
 function fmtAgo(isoStr) {
   if (!isoStr) return null;
@@ -854,7 +855,14 @@ function fmtAgo(isoStr) {
 
 function fetchLastChecked() {
   fetch('/last-checked').then(function(r){ return r.json(); }).then(function(d){
-    lastCheckedIso = d.last_checked || null;
+    var ts = d.last_checked || null;
+    // If background checker just ran (timestamp changed), reload page to show fresh data
+    if (ts && lastSeenCheckedIso && ts !== lastSeenCheckedIso) {
+      location.reload();
+      return;
+    }
+    lastSeenCheckedIso = ts;
+    lastCheckedIso = ts;
     tick();
   }).catch(function(){});
 }
