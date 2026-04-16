@@ -133,7 +133,9 @@
     .export-btn svg{width:13px;height:13px;fill:currentColor;}
 
     /* ── FILTER BAR ───────────────────────────── */
-    .filter-bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:9px 18px;border-bottom:1px solid var(--bd);}
+    .filter-bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:9px 18px;}
+    .ls-filter-group{display:inline-flex;align-items:center;gap:7px;margin-left:auto;}
+    .filter-count-row{padding:3px 18px 7px;text-align:right;border-bottom:1px solid var(--bd);}
     .filter-btn{padding:4px 13px;border-radius:999px;font-size:12px;font-weight:700;line-height:1;border:1px solid transparent;cursor:pointer;background:rgba(255,255,255,.05);color:var(--muted);font-family:inherit;transition:all .15s;white-space:nowrap;}
     [data-theme="light"] .filter-btn{background:rgba(0,0,0,.05);}
     .filter-btn:hover{border-color:var(--bd-hi);color:var(--text);}
@@ -143,7 +145,7 @@
     .filter-pend.on {background:rgba(255,179,0,.15); border-color:rgba(255,179,0,.4); color:#fbbf24;}
     .filter-ls-all.on,.filter-ls.on{background:rgba(0,170,255,.15);border-color:rgba(0,170,255,.4);color:var(--hl);}
     .filter-bar-sep{width:1px;height:18px;background:var(--bd);flex-shrink:0;align-self:center;}
-    .showing-info{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+    .showing-info{font-size:12px;color:var(--muted);white-space:nowrap;}
 
     /* ── TABLE ────────────────────────────────── */
     table{width:100%;border-collapse:collapse;}
@@ -386,12 +388,16 @@
       <button class="filter-btn filter-verde" data-f="verde">&#11044; CLEARED <span class="f-cnt" id="cnt-verde"></span></button>
       <button class="filter-btn filter-rojo"  data-f="rojo">&#11044; INSPECTION <span class="f-cnt" id="cnt-rojo"></span></button>
       <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDING <span class="f-cnt" id="cnt-pend"></span></button>
-      <button class="filter-btn filter-ls-all on" data-ls="all" style="margin-left:28px;">All LS</button>
-      <button class="filter-btn filter-ls" data-ls="LS1">LS1</button>
-      <button class="filter-btn filter-ls" data-ls="LS2">LS2</button>
-      <button class="filter-btn filter-ls" data-ls="LS3">LS3</button>
-      <button class="filter-btn filter-ls" data-ls="LS4">LS4</button>
-      <button class="filter-btn filter-ls" data-ls="LS5">LS5</button>
+      <div class="ls-filter-group">
+        <button class="filter-btn filter-ls-all on" data-ls="all">All LS</button>
+        <button class="filter-btn filter-ls" data-ls="LS1">LS1</button>
+        <button class="filter-btn filter-ls" data-ls="LS2">LS2</button>
+        <button class="filter-btn filter-ls" data-ls="LS3">LS3</button>
+        <button class="filter-btn filter-ls" data-ls="LS4">LS4</button>
+        <button class="filter-btn filter-ls" data-ls="LS5">LS5</button>
+      </div>
+    </div>
+    <div class="filter-count-row">
       <span id="showingInfo" class="showing-info"></span>
     </div>
 
