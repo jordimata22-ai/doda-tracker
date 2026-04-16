@@ -141,6 +141,8 @@
     .filter-verde.on{background:rgba(0,200,83,.15); border-color:rgba(0,200,83,.4); color:#3ddc84;}
     .filter-rojo.on {background:rgba(255,59,48,.15); border-color:rgba(255,59,48,.4); color:#ff7068;}
     .filter-pend.on {background:rgba(255,179,0,.15); border-color:rgba(255,179,0,.4); color:#fbbf24;}
+    .filter-ls-all.on,.filter-ls.on{background:rgba(0,170,255,.15);border-color:rgba(0,170,255,.4);color:var(--hl);}
+    .filter-bar-sep{width:1px;height:18px;background:var(--bd);flex-shrink:0;align-self:center;}
     .showing-info{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap;}
 
     /* ── TABLE ────────────────────────────────── */
@@ -324,6 +326,18 @@
           </div>
         </div>
 
+        <div class="form-group" style="margin-top:10px;">
+          <label class="form-label">LOGISTICS SPECIALIST</label>
+          <select name="ls_id" class="form-select" style="width:100%; padding:8px; border-radius:6px; background:var(--input-bg); color:var(--text-primary); border:1px solid var(--border-color);">
+            <option value="">— Select —</option>
+            <option value="LS1">LS1</option>
+            <option value="LS2">LS2</option>
+            <option value="LS3">LS3</option>
+            <option value="LS4">LS4</option>
+            <option value="LS5">LS5</option>
+          </select>
+        </div>
+
         <button type="submit" class="submit-btn">Review &amp; Upload</button>
       </form>
 
@@ -354,6 +368,7 @@
           <option value="ADDED_DESC">Date Added</option>
           <option value="ORDER_ASC">Order (A&#8594;Z)</option>
           <option value="TRAILER_ASC">Trailer (A&#8594;Z)</option>
+          <option value="LS_ASC">Logistics Specialist</option>
         </select>
         <button id="exportBtn" class="export-btn">
           <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -371,6 +386,12 @@
       <button class="filter-btn filter-verde" data-f="verde">&#11044; CLEARED <span class="f-cnt" id="cnt-verde"></span></button>
       <button class="filter-btn filter-rojo"  data-f="rojo">&#11044; INSPECTION <span class="f-cnt" id="cnt-rojo"></span></button>
       <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDING <span class="f-cnt" id="cnt-pend"></span></button>
+      <button class="filter-btn filter-ls-all on" data-ls="all" style="margin-left:28px;">All LS</button>
+      <button class="filter-btn filter-ls" data-ls="LS1">LS1</button>
+      <button class="filter-btn filter-ls" data-ls="LS2">LS2</button>
+      <button class="filter-btn filter-ls" data-ls="LS3">LS3</button>
+      <button class="filter-btn filter-ls" data-ls="LS4">LS4</button>
+      <button class="filter-btn filter-ls" data-ls="LS5">LS5</button>
       <span id="showingInfo" class="showing-info"></span>
     </div>
 
@@ -383,6 +404,7 @@
           <th style="width:145px">Trailer / Plates</th>
           <th>Status</th>
           <th class="notes-col" style="width:170px">Notes</th>
+          <th style="font-size:0.75rem; min-width:70px; text-align:center;">LOGISTICS<br>SPECIALIST</th>
           <th style="width:95px;text-align:right">Actions</th>
         </tr>
       </thead>
@@ -436,7 +458,8 @@
               data-star="{{ o.starred or 0 }}"
               data-grp="{{ grp }}"
               data-label="{{ last_label }}"
-              data-notes="{{ o.notes|e }}">
+              data-notes="{{ o.notes|e }}"
+              data-ls="{{ o.ls_id or '' }}">
 
             <!-- Star -->
             <td style="padding-left:18px">
@@ -494,6 +517,11 @@
               </div>
             </td>
 
+            <!-- Logistics Specialist -->
+            <td style="text-align:center; vertical-align:middle; font-size:0.8rem; font-weight:600; color:var(--muted);">
+              {{ o.ls_id or '&mdash;' }}
+            </td>
+
             <!-- Actions -->
             <td>
               <div class="actions">
@@ -516,7 +544,7 @@
 
         {% if orders|length == 0 %}
           <tr id="dbEmptyRow">
-            <td colspan="6">
+            <td colspan="7">
               <div class="empty">
                 <svg class="empty-helmet" width="76" height="76" viewBox="0 0 80 80" fill="none">
                   <path d="M14 50C14 28 23 13 40 13 57 13 66 28 66 50" fill="rgba(0,170,255,0.07)" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -554,6 +582,7 @@
   <div style="background:#112A40;border:1px solid #0066CC;border-radius:12px;padding:32px;max-width:440px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.5);">
     <div style="font-size:16px;font-weight:800;margin-bottom:16px;color:#fff;">Confirm Shipment Details</div>
     <div id="confSummary" style="font-size:14px;color:#A0AEC0;line-height:1.7;margin-bottom:24px;"></div>
+    <p id="modal-ls-display" style="font-size:0.85rem; color:var(--text-secondary); margin-top:4px;"></p>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button id="confGoBack" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#A0AEC0;padding:10px 20px;font-size:13px;font-family:inherit;cursor:pointer;">Go Back</button>
       <button id="confSave" style="background:#0066CC;border:none;border-radius:8px;color:#fff;padding:10px 20px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">Confirm &amp; Save</button>
@@ -742,6 +771,7 @@ function showConfModal() {
     'Order <strong style="color:#fff">' + pendingOrderNo + '</strong> \u2014 ' + idPart + '.' +
     '<br><br>Does this look correct?';
 
+  document.getElementById('modal-ls-display').textContent = document.querySelector('select[name="ls_id"]').value || '';
   confModal.style.display = 'flex';
 }
 
@@ -893,12 +923,13 @@ var tbody       = document.getElementById('tbody');
 var allRows     = Array.from(document.querySelectorAll('tr.row'));
 var tableFooter = document.getElementById('tableFooter');
 
-var PAGE_SIZE     = 10;
-var activeSort    = 'PRIORITY';
-var query         = '';
-var activeFilters = new Set();
-var currentPage   = 1;
-var currentList   = [];
+var PAGE_SIZE       = 10;
+var activeSort      = 'PRIORITY';
+var query           = '';
+var activeFilters   = new Set();
+var activeLsFilters = new Set();
+var currentPage     = 1;
+var currentList     = [];
 
 var epoch    = function(iso) { var t = new Date(iso).getTime(); return isNaN(t) ? 0 : Math.floor(t/1000); };
 var evEpoch  = function(r) { return epoch(r.dataset.event || ''); };
@@ -929,6 +960,7 @@ function apply() {
 
   var list = searchFiltered.filter(function(r) {
     if (activeFilters.size > 0 && !activeFilters.has(r.dataset.grp)) return false;
+    if (activeLsFilters.size > 0 && !activeLsFilters.has(r.dataset.ls)) return false;
     return true;
   });
 
@@ -943,6 +975,13 @@ function apply() {
       case 'ADDED_DESC':  return addEpoch(b) - addEpoch(a);
       case 'ORDER_ASC':   return (a.dataset.order||'').localeCompare(b.dataset.order||'');
       case 'TRAILER_ASC': return (a.dataset.trailer||'').localeCompare(b.dataset.trailer||'');
+      case 'LS_ASC': {
+        var la = a.dataset.ls || '', lb = b.dataset.ls || '';
+        if (!la && !lb) return 0;
+        if (!la) return 1;
+        if (!lb) return -1;
+        return la.localeCompare(lb);
+      }
       default: return 0;
     }
   });
@@ -969,7 +1008,7 @@ function apply() {
   tbody.innerHTML = '';
   if (pageRows.length === 0 && allRows.length > 0) {
     var noMatch = document.createElement('tr');
-    noMatch.innerHTML = '<td colspan="6"><div class="empty"><div class="empty-sub" style="padding:28px 0">No orders match your search.</div></div></td>';
+    noMatch.innerHTML = '<td colspan="7"><div class="empty"><div class="empty-sub" style="padding:28px 0">No orders match your search.</div></div></td>';
     tbody.appendChild(noMatch);
   } else {
     pageRows.forEach(function(r) { tbody.appendChild(r); });
@@ -981,18 +1020,35 @@ document.getElementById('q').addEventListener('input',    function(e){ query = e
 document.getElementById('prevBtn').addEventListener('click', function(){ currentPage--; apply(); });
 document.getElementById('nextBtn').addEventListener('click', function(){ currentPage++; apply(); });
 
-document.querySelectorAll('.filter-btn').forEach(function(btn) {
+document.querySelectorAll('.filter-btn[data-f]').forEach(function(btn) {
   btn.addEventListener('click', function() {
     var f = btn.dataset.f;
     if (f === 'all') {
       activeFilters.clear();
-      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('on'); });
+      document.querySelectorAll('.filter-btn[data-f]').forEach(function(b) { b.classList.remove('on'); });
       btn.classList.add('on');
     } else {
       document.querySelector('.filter-all').classList.remove('on');
       if (activeFilters.has(f)) { activeFilters.delete(f); btn.classList.remove('on'); }
       else                      { activeFilters.add(f);    btn.classList.add('on'); }
       if (activeFilters.size === 0) document.querySelector('.filter-all').classList.add('on');
+    }
+    currentPage = 1; apply();
+  });
+});
+
+document.querySelectorAll('.filter-ls-all, .filter-ls').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var ls = btn.dataset.ls;
+    if (ls === 'all') {
+      activeLsFilters.clear();
+      document.querySelectorAll('.filter-ls-all, .filter-ls').forEach(function(b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+    } else {
+      document.querySelector('.filter-ls-all').classList.remove('on');
+      if (activeLsFilters.has(ls)) { activeLsFilters.delete(ls); btn.classList.remove('on'); }
+      else                         { activeLsFilters.add(ls);    btn.classList.add('on'); }
+      if (activeLsFilters.size === 0) document.querySelector('.filter-ls-all').classList.add('on');
     }
     currentPage = 1; apply();
   });
