@@ -519,7 +519,7 @@
 
             <!-- Logistics Specialist -->
             <td style="text-align:center; vertical-align:middle; font-size:0.8rem; font-weight:600; color:var(--muted);">
-              {{ o.ls_id or '&mdash;' }}
+              {% if o.ls_id %}{{ o.ls_id }}{% else %}&mdash;{% endif %}
             </td>
 
             <!-- Actions -->
