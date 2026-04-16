@@ -1,9 +1,11 @@
+import logging
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent
+logger = logging.getLogger(__name__)
 DB_PATH = ROOT / "data" / "doda.db"
 
 
@@ -58,6 +60,8 @@ def init_db():
                 con.execute("ALTER TABLE orders ADD COLUMN inspection_start TEXT")
             if "inspection_end" not in cols:
                 con.execute("ALTER TABLE orders ADD COLUMN inspection_end TEXT")
+            if "ls_id" not in cols:
+                con.execute("ALTER TABLE orders ADD COLUMN ls_id TEXT")
         except Exception:
             pass
 
@@ -98,18 +102,19 @@ def init_db():
         """)
 
 
-def upsert_order_with_pdf(order_no: str, pdf_path: str, trailer_no: str | None = None) -> int:
+def upsert_order_with_pdf(order_no: str, pdf_path: str, trailer_no: str | None = None, ls_id: str | None = None) -> int:
+    logger.info("DEBUG upsert_order_with_pdf: order_no=%s ls_id=%s", order_no, ls_id)
     with connect() as con:
         cur = con.execute("SELECT id FROM orders WHERE order_no=?", (order_no,))
         row = cur.fetchone()
         if row:
             oid = int(row[0])
-            con.execute("UPDATE orders SET pdf_path=?, trailer_no=? WHERE id=?", (pdf_path, trailer_no, oid))
+            con.execute("UPDATE orders SET pdf_path=?, trailer_no=?, ls_id=? WHERE id=?", (pdf_path, trailer_no, ls_id, oid))
             return oid
 
         cur = con.execute(
-            "INSERT INTO orders(order_no, pdf_path, created_at, trailer_no) VALUES(?,?,?,?)",
-            (order_no, pdf_path, utc_now(), trailer_no)
+            "INSERT INTO orders(order_no, pdf_path, created_at, trailer_no, ls_id) VALUES(?,?,?,?,?)",
+            (order_no, pdf_path, utc_now(), trailer_no, ls_id)
         )
         return int(cur.lastrowid)
 
@@ -278,7 +283,7 @@ def list_orders() -> list[dict]:
         cur = con.execute(
             """
             SELECT o.order_no, o.pdf_path, o.created_at, o.trailer_no, o.starred, o.notes,
-                   o.inspection_start, o.inspection_end,
+                   o.inspection_start, o.inspection_end, o.ls_id,
                    l.url, l.last_checked, l.last_is_clear, l.last_status, l.last_event_ts
             FROM orders o
             LEFT JOIN links l ON l.order_id = o.id
@@ -303,7 +308,7 @@ def list_orders() -> list[dict]:
 
     # group by order
     by = {}
-    for order_no, pdf_path, created_at, trailer_no, starred, notes, inspection_start, inspection_end, url, last_checked, last_is_clear, last_status, last_event_ts in rows:
+    for order_no, pdf_path, created_at, trailer_no, starred, notes, inspection_start, inspection_end, ls_id, url, last_checked, last_is_clear, last_status, last_event_ts in rows:
         o = by.setdefault(order_no, {
             "order_no": order_no,
             "pdf_path": pdf_path,
@@ -315,6 +320,7 @@ def list_orders() -> list[dict]:
             "had_rojo": order_no in had_rojo_set,
             "inspection_start": inspection_start,
             "inspection_end": inspection_end,
+            "ls_id": ls_id,
             "links": [],
         })
         if url:
@@ -351,3 +357,9 @@ def list_orders() -> list[dict]:
             o["inspection_since"]    = None
 
     return [o for o in by.values() if o.get("links")]
+
+
+def update_ls(order_no: str, ls_id: str) -> bool:
+    with connect() as con:
+        cur = con.execute("UPDATE orders SET ls_id=? WHERE order_no=?", (ls_id, order_no))
+        return cur.rowcount > 0
