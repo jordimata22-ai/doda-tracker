@@ -103,7 +103,6 @@ def init_db():
 
 
 def upsert_order_with_pdf(order_no: str, pdf_path: str, trailer_no: str | None = None, ls_id: str | None = None) -> int:
-    logger.info("DEBUG upsert_order_with_pdf: order_no=%s ls_id=%s", order_no, ls_id)
     with connect() as con:
         cur = con.execute("SELECT id FROM orders WHERE order_no=?", (order_no,))
         row = cur.fetchone()

@@ -114,7 +114,6 @@ def create_app():
         identifier_type  = (request.form.get("identifier_type")  or "trailer").strip()
         identifier_value = (request.form.get("identifier_value") or "").strip()
         ls_id = (request.form.get("ls_id") or "").strip() or None
-        logger.info("DEBUG upload: order_no=%s ls_id=%s", order_no, ls_id)
 
         try:
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
@@ -144,7 +143,6 @@ def create_app():
                 tmp_path.unlink(missing_ok=True)
 
             order_id = upsert_order_with_pdf(order_no=order_no, pdf_path=str(dest), trailer_no=trailer, ls_id=ls_id)
-            logger.info("DEBUG upsert done: order_id=%s", order_id)
             add_links(order_id, links)
 
             trailer_msg = f" \u2014 Trailer {trailer}" if trailer else ""
