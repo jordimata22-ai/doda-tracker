@@ -175,8 +175,8 @@ def record_check(link_id: int, url: str, status: dict):
             (now, compact or status.get("excerpt"), 1 if status.get("is_clear") else 0, event_ts_iso, link_id),
         )
 
-        # Update inspection timestamps on the orders table
-        if event_ts_iso and code in ("MEX_RED", "MEX_RED_DONE"):
+        # Handle MEX_RED (inspection started) — use SAT's timestamp if available
+        if code == "MEX_RED" and event_ts_iso:
             order_row = con.execute(
                 "SELECT o.id, o.inspection_start FROM orders o "
                 "JOIN links l ON l.order_id = o.id WHERE l.id = ?",
@@ -184,15 +184,28 @@ def record_check(link_id: int, url: str, status: dict):
             ).fetchone()
             if order_row:
                 order_id, insp_start = order_row
-                if code == "MEX_RED" and not insp_start:
+                if not insp_start:
                     con.execute(
                         "UPDATE orders SET inspection_start=? WHERE id=?",
                         (event_ts_iso, order_id)
                     )
-                elif code == "MEX_RED_DONE":
+
+        # Handle MEX_RED_DONE (inspection concluded) — SAT doesn't provide an
+        # end timestamp, so stamp inspection_end with the moment we detected
+        # the change. Accurate to within one polling interval.
+        if code == "MEX_RED_DONE":
+            order_row = con.execute(
+                "SELECT o.id, o.inspection_end FROM orders o "
+                "JOIN links l ON l.order_id = o.id WHERE l.id = ?",
+                (link_id,)
+            ).fetchone()
+            if order_row:
+                order_id, insp_end = order_row
+                if not insp_end:
+                    detected_at = utc_now()
                     con.execute(
                         "UPDATE orders SET inspection_end=? WHERE id=?",
-                        (event_ts_iso, order_id)
+                        (detected_at, order_id)
                     )
 
 
@@ -228,12 +241,22 @@ def delete_order(order_no: str) -> dict:
 
 
 def _parse_sat_ts(ts: str | None):
-    """Parse a SAT ISO timestamp string (no timezone) into a datetime, or None."""
+    """Parse a timestamp that is either:
+      - SAT's naive local format: '2026-01-25T10:10:38'  (treated as CST wall time)
+      - Our own UTC ISO format:   '2026-04-22T12:45:00+00:00' (timezone-aware)
+
+    Returns a naive datetime in America/Chicago for consistent subtraction.
+    """
     if not ts:
         return None
     try:
         from datetime import datetime as _dt
-        return _dt.fromisoformat(ts)
+        dt = _dt.fromisoformat(ts)
+        if dt.tzinfo is not None:
+            # Timezone-aware (our own detection timestamp) — convert to CST, drop tz
+            dt = dt.astimezone(CST).replace(tzinfo=None)
+        # else: naive (SAT's wall-clock time) — assume it's already CST-ish
+        return dt
     except Exception:
         return None
 
