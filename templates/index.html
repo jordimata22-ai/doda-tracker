@@ -67,6 +67,9 @@
     .flash{border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
     .flash-ok {background:#065F2E; border:1px solid rgba(0,200,83,.2); border-left:4px solid #00C853; color:#fff; font-weight:700;}
     .flash-err{background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.3);color:#ff7068;}
+    .flash-close{margin-left:auto;background:none;border:none;color:inherit;cursor:pointer;opacity:.7;padding:0 4px;font-size:18px;line-height:1;font-family:inherit;flex-shrink:0;}
+    .flash-close:hover{opacity:1;}
+    .flash.dismissing{opacity:0;transition:opacity .4s;}
 
     /* ── DROP ZONE ────────────────────────────── */
     /* CRITICAL: position:relative so overlay input can cover it */
@@ -143,6 +146,7 @@
     .filter-verde.on{background:rgba(0,200,83,.15); border-color:rgba(0,200,83,.4); color:#3ddc84;}
     .filter-rojo.on {background:rgba(255,59,48,.15); border-color:rgba(255,59,48,.4); color:#ff7068;}
     .filter-pend.on {background:rgba(255,179,0,.15); border-color:rgba(255,179,0,.4); color:#fbbf24;}
+    .filter-elim.on {background:rgba(74,74,74,.30);  border-color:rgba(255,59,48,.4); color:#d4d4d4;}
     .filter-ls-all.on,.filter-ls.on{background:rgba(0,170,255,.15);border-color:rgba(0,170,255,.4);color:var(--hl);}
     .filter-bar-sep{width:1px;height:18px;background:var(--bd);flex-shrink:0;align-self:center;}
     .showing-info{font-size:12px;color:var(--muted);white-space:nowrap;}
@@ -159,6 +163,7 @@
     tbody tr.st-verde  {box-shadow:inset 4px 0 0 var(--green);}
     tbody tr.st-rojo   {box-shadow:inset 4px 0 0 var(--red);}
     tbody tr.st-pending{box-shadow:inset 4px 0 0 var(--amber);}
+    tbody tr.st-elim   {box-shadow:inset 4px 0 0 #6b6b6b;}
     td{padding:11px 14px;vertical-align:middle;}
     .order-no{font-size:14px;font-weight:800;letter-spacing:.02em;}
     .trailer-no{font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;}
@@ -181,6 +186,8 @@
     [data-theme="light"] .b-rojo {background:#FDDEDE;color:#B30000;border:2px solid #B30000;box-shadow:0 1px 4px rgba(179,0,0,.25);}
     [data-theme="light"] .b-pend {background:#FFF0CC;color:#8A5700;border:2px solid #8A5700;box-shadow:0 1px 4px rgba(138,87,0,.25);}
     [data-theme="light"] .b-insp {background:#FFE8E8;color:#6B0000;border:2px solid #6B0000;box-shadow:0 1px 4px rgba(107,0,0,.25);}
+    .b-elim{background:rgba(74,74,74,.20);color:#d4d4d4;border:1px solid rgba(255,59,48,.40);}
+    [data-theme="light"] .b-elim {background:#E8E8E8;color:#4a0000;border:2px solid #B30000;box-shadow:0 1px 4px rgba(179,0,0,.25);}
 
     /* ── NOTES ────────────────────────────────── */
     .notes-td{min-width:130px;max-width:210px;}
@@ -388,6 +395,7 @@
       <button class="filter-btn filter-verde" data-f="verde">&#11044; CLEARED <span class="f-cnt" id="cnt-verde"></span></button>
       <button class="filter-btn filter-rojo"  data-f="rojo">&#11044; INSPECTION <span class="f-cnt" id="cnt-rojo"></span></button>
       <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDING <span class="f-cnt" id="cnt-pend"></span></button>
+      <button class="filter-btn filter-elim"  data-f="elim">&#9888; ELIMINATED <span class="f-cnt" id="cnt-elim"></span></button>
       <div class="ls-filter-group">
         <button class="filter-btn filter-ls-all on" data-ls="all">All LS</button>
         <button class="filter-btn filter-ls" data-ls="LS1">LS1</button>
@@ -447,6 +455,9 @@
           {% elif sk == 'MEX_RED' %}
             {% set rc = 'st-rojo' %}
             {% set grp = 'rojo' %}
+          {% elif sk == 'DODA_ELIMINATED' %}
+            {% set rc = 'st-elim' %}
+            {% set grp = 'elim' %}
           {% else %}
             {% set rc = 'st-pending' %}
             {% set grp = 'pend' %}
@@ -500,6 +511,8 @@
                 {% if o.inspection_since %}
                   <div class="status-detail">In inspection since {{ o.inspection_since }}</div>
                 {% endif %}
+              {% elif sk == 'DODA_ELIMINATED' %}
+                <span class="badge b-elim" data-badge-type="elim">&#9888; ELIMINATED</span>
               {% else %}
                 <span class="badge b-pend" data-badge-type="pend">PENDING</span>
               {% endif %}
@@ -944,7 +957,7 @@ var isPend   = function(r) { var s = r.dataset.status||''; return !s||s==='PENDI
 var isStar   = function(r) { return r.dataset.star === '1'; };
 
 function updateCounts(searchFiltered) {
-  var cnt = {verde:0, rojo:0, pend:0};
+  var cnt = {verde:0, rojo:0, pend:0, elim:0};
   searchFiltered.forEach(function(r) {
     var g = r.dataset.grp;
     if (cnt[g] !== undefined) cnt[g]++;
@@ -953,6 +966,7 @@ function updateCounts(searchFiltered) {
   el = document.getElementById('cnt-verde'); if(el) el.textContent = '(' + cnt.verde + ')';
   el = document.getElementById('cnt-rojo');  if(el) el.textContent = '(' + cnt.rojo  + ')';
   el = document.getElementById('cnt-pend');  if(el) el.textContent = '(' + cnt.pend  + ')';
+  el = document.getElementById('cnt-elim');  if(el) el.textContent = '(' + cnt.elim  + ')';
 }
 
 function apply() {
@@ -1137,6 +1151,53 @@ document.addEventListener('keydown', function(e) {
 /* ══════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════
+   FLASH BANNERS
+══════════════════════════════════════════════ */
+function showFlash(type, msg) {
+  var cls = type === 'success' ? 'flash-ok' : 'flash-err';
+  var icon = type === 'success'
+    ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>'
+    : '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+  var div = document.createElement('div');
+  div.className = 'flash ' + cls;
+  div.innerHTML = icon + ' ' + msg;
+  var main = document.querySelector('.main');
+  main.insertBefore(div, main.firstChild);
+  initFlashBanners();
+}
+
+function dismissFlash(div) {
+  div.classList.add('dismissing');
+  div.addEventListener('transitionend', function() { div.remove(); }, {once: true});
+}
+
+function initFlashBanners() {
+  document.querySelectorAll('.flash').forEach(function(div) {
+    if (div.querySelector('.flash-close')) return;
+    var btn = document.createElement('button');
+    btn.className = 'flash-close';
+    btn.setAttribute('type', 'button');
+    btn.setAttribute('aria-label', 'Dismiss');
+    btn.textContent = '\u00D7';
+    btn.addEventListener('click', function() { dismissFlash(div); });
+    div.appendChild(btn);
+    if (div.classList.contains('flash-ok')) {
+      setTimeout(function() { if (div.parentNode) dismissFlash(div); }, 5000);
+    }
+  });
+}
+
+new MutationObserver(function(mutations) {
+  mutations.forEach(function(m) {
+    m.addedNodes.forEach(function(node) {
+      if (node.nodeType === 1 && node.classList.contains('flash')) initFlashBanners();
+    });
+  });
+}).observe(document.querySelector('.main'), {childList: true});
+
+initFlashBanners();
+
 apply();           // Initial table render
 </script>
 </body>

@@ -6,6 +6,7 @@
     "MEX_RED_DONE",
     "MEX_RED",
     "NOT_PRESENTED",
+    "DODA_ELIMINATED",
     "UNKNOWN"
   ],
   "phrases": [
@@ -36,6 +37,13 @@
       "label": "Pending Crossing",
       "cleared": false,
       "severity": "warn"
+    },
+    {
+      "phrase": "El número de integración ha sido eliminado",
+      "status": "DODA_ELIMINATED",
+      "label": "DODA Eliminated. Contact MX Broker",
+      "cleared": false,
+      "severity": "attention"
     }
   ]
 }
