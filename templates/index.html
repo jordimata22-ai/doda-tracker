@@ -101,6 +101,7 @@
     .form-input::placeholder{color:var(--muted);opacity:.7;}
     .form-input:focus,.form-select:focus{border-color:var(--hl);}
     .form-input.err{border-color:var(--red);}
+    .form-select.err{border-color:var(--red);}
     .form-select{cursor:pointer;}
     .form-select option,.sort-sel option{background:var(--opt-bg);color:var(--text);}
     .form-error{font-size:11px;color:var(--red);display:none;margin-top:2px;}
@@ -333,6 +334,7 @@
             <input type="text" name="identifier_value" id="idValue" class="form-input"
                    placeholder="Enter value" autocomplete="off" required />
           </div>
+          <span class="form-error" id="idValueErr">Identifier value is required.</span>
         </div>
 
         <div class="form-group" style="margin-top:10px;">
@@ -345,6 +347,7 @@
             <option value="LS4">LS4</option>
             <option value="LS5">LS5</option>
           </select>
+          <span class="form-error" id="lsErr">Logistics Specialist is required.</span>
         </div>
 
         <button type="submit" class="submit-btn">Review &amp; Upload</button>
@@ -745,8 +748,12 @@ changeBtn.addEventListener('click', function() {
 /* ══════════════════════════════════════════════
    FORM VALIDATION + SUBMIT
 ══════════════════════════════════════════════ */
-var orderInput = document.getElementById('order_no');
-var orderErr   = document.getElementById('orderErr');
+var orderInput   = document.getElementById('order_no');
+var orderErr     = document.getElementById('orderErr');
+var idValueInput = document.getElementById('idValue');
+var idValueErr   = document.getElementById('idValueErr');
+var lsSelect     = document.querySelector('select[name="ls_id"]');
+var lsErr        = document.getElementById('lsErr');
 
 function clearOrderErr() {
   orderInput.classList.remove('err');
@@ -760,6 +767,13 @@ orderInput.addEventListener('input', function() {
   if (v.length > 0 && !validateOrder(v)) {
     orderInput.classList.add('err'); orderErr.classList.add('show');
   } else { clearOrderErr(); }
+});
+
+idValueInput.addEventListener('input', function() {
+  if (idValueInput.value.trim()) { idValueInput.classList.remove('err'); idValueErr.classList.remove('show'); }
+});
+lsSelect.addEventListener('change', function() {
+  if (lsSelect.value) { lsSelect.classList.remove('err'); lsErr.classList.remove('show'); }
 });
 
 /* ══════════════════════════════════════════════
@@ -870,13 +884,12 @@ uploadForm.addEventListener('submit', function(e) {
     orderInput.classList.add('err'); orderErr.classList.add('show'); orderInput.focus();
     return;
   }
-  if (!document.getElementById('idValue').value.trim()) {
-    showFlash('error', 'Identifier value is required (Trailer or Plates number).');
-    document.getElementById('idValue').focus();
+  if (!idValueInput.value.trim()) {
+    idValueInput.classList.add('err'); idValueErr.classList.add('show'); idValueInput.focus();
     return;
   }
-  if (!document.querySelector('select[name="ls_id"]').value) {
-    showFlash('error', 'Logistics Specialist is required.');
+  if (!lsSelect.value) {
+    lsSelect.classList.add('err'); lsErr.classList.add('show');
     return;
   }
   showConfModal();
