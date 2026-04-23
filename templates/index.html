@@ -854,8 +854,8 @@ function doUpload() {
   if (droppedFile && (!realFileInput.files || !realFileInput.files.length)) {
     var fd = new FormData(uploadForm);
     fd.set('pdf_file', droppedFile, droppedFile.name);
-    fetch('/upload', { method: 'POST', body: fd })
-      .then(function(r) { window.location.href = r.url || '/'; })
+    fetch('/upload', { method: 'POST', body: fd, redirect: 'manual' })
+      .then(function() { window.location.href = '/'; })
       .catch(function(err) { alert('Upload failed: ' + err.message); });
   } else if (!realFileInput.files || !realFileInput.files.length) {
     alert('Please select a PDF file first.');
@@ -866,9 +866,17 @@ function doUpload() {
 
 uploadForm.addEventListener('submit', function(e) {
   e.preventDefault();
-  // Validate form fields before opening the read-only confirmation modal
   if (!validateOrder(orderInput.value)) {
     orderInput.classList.add('err'); orderErr.classList.add('show'); orderInput.focus();
+    return;
+  }
+  if (!document.getElementById('idValue').value.trim()) {
+    showFlash('error', 'Identifier value is required (Trailer or Plates number).');
+    document.getElementById('idValue').focus();
+    return;
+  }
+  if (!document.querySelector('select[name="ls_id"]').value) {
+    showFlash('error', 'Logistics Specialist is required.');
     return;
   }
   showConfModal();
