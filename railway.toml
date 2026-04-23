@@ -1,9 +1,8 @@
 [build]
 builder = "nixpacks"
-
-[phases.setup]
-aptPackages = ["libzbar0"]
+nixpacksBuildCommand = "apt-get install -y libzbar0 && pip install -r requirements.txt"
 
 [deploy]
-startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --config gunicorn.conf.py"
+startCommand = "gunicorn app:app -c gunicorn_conf.py"
 restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
