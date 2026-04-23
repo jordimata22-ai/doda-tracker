@@ -186,8 +186,8 @@
     [data-theme="light"] .b-rojo {background:#FDDEDE;color:#B30000;border:2px solid #B30000;box-shadow:0 1px 4px rgba(179,0,0,.25);}
     [data-theme="light"] .b-pend {background:#FFF0CC;color:#8A5700;border:2px solid #8A5700;box-shadow:0 1px 4px rgba(138,87,0,.25);}
     [data-theme="light"] .b-insp {background:#FFE8E8;color:#6B0000;border:2px solid #6B0000;box-shadow:0 1px 4px rgba(107,0,0,.25);}
-    .b-elim{background:rgba(74,74,74,.20);color:#d4d4d4;border:1px solid rgba(255,59,48,.40);}
-    [data-theme="light"] .b-elim {background:#E8E8E8;color:#4a0000;border:2px solid #B30000;box-shadow:0 1px 4px rgba(179,0,0,.25);}
+    .b-elim{background:rgba(140,140,140,.38);color:#e8e8e8;border:1px solid rgba(255,59,48,.40);-webkit-text-stroke:.4px rgba(255,59,48,.75);paint-order:stroke fill;}
+    [data-theme="light"] .b-elim {background:#E8E8E8;color:#4a0000;border:2px solid #B30000;box-shadow:0 1px 4px rgba(179,0,0,.25);-webkit-text-stroke:.4px rgba(179,0,0,.6);paint-order:stroke fill;}
 
     /* ── NOTES ────────────────────────────────── */
     .notes-td{min-width:130px;max-width:210px;}
@@ -319,7 +319,7 @@
           <label class="form-label" for="order_no" >Order Number</label>
           <input type="text" id="order_no" name="order_no" class="form-input"
                  placeholder="6-digit order number"
-                 maxlength="6" inputmode="numeric" autocomplete="off" />
+                 maxlength="6" inputmode="numeric" autocomplete="off" required />
           <span class="form-error" id="orderErr" >Must be exactly 6 digits (numbers only).</span>
         </div>
 
@@ -331,13 +331,13 @@
               <option value="plates">Plates</option>
             </select>
             <input type="text" name="identifier_value" id="idValue" class="form-input"
-                   placeholder="Enter value" autocomplete="off" />
+                   placeholder="Enter value" autocomplete="off" required />
           </div>
         </div>
 
         <div class="form-group" style="margin-top:10px;">
           <label class="form-label">LOGISTICS SPECIALIST</label>
-          <select name="ls_id" class="form-select" style="width:100%; padding:8px; border-radius:6px; background:var(--input-bg); color:var(--text-primary); border:1px solid var(--border-color);">
+          <select name="ls_id" class="form-select" required style="width:100%; padding:8px; border-radius:6px; background:var(--input-bg); color:var(--text-primary); border:1px solid var(--border-color);">
             <option value="">— Select —</option>
             <option value="LS1">LS1</option>
             <option value="LS2">LS2</option>
@@ -395,7 +395,6 @@
       <button class="filter-btn filter-verde" data-f="verde">&#11044; CLEARED <span class="f-cnt" id="cnt-verde"></span></button>
       <button class="filter-btn filter-rojo"  data-f="rojo">&#11044; INSPECTION <span class="f-cnt" id="cnt-rojo"></span></button>
       <button class="filter-btn filter-pend"  data-f="pend">&#11044; PENDING <span class="f-cnt" id="cnt-pend"></span></button>
-      <button class="filter-btn filter-elim"  data-f="elim">&#9888; ELIMINATED <span class="f-cnt" id="cnt-elim"></span></button>
       <div class="ls-filter-group">
         <button class="filter-btn filter-ls-all on" data-ls="all">All LS</button>
         <button class="filter-btn filter-ls" data-ls="LS1">LS1</button>
@@ -457,7 +456,7 @@
             {% set grp = 'rojo' %}
           {% elif sk == 'DODA_ELIMINATED' %}
             {% set rc = 'st-elim' %}
-            {% set grp = 'elim' %}
+            {% set grp = 'pend' %}
           {% else %}
             {% set rc = 'st-pending' %}
             {% set grp = 'pend' %}
@@ -550,12 +549,12 @@
                     <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"/><path d="M5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>
                   </a>
                 {% endif %}
-                <form style="margin:0" method="post" action="{{ url_for('delete_order_route', order_no=o.order_no) }}"
-                      onsubmit="return confirmDel('{{ o.order_no }}')">
-                  <button class="icon-btn icon-btn-del" type="submit" title="Delete" aria-label="Delete">
-                    <svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM7 9h2v10H7V9z"/></svg>
-                  </button>
-                </form>
+                <button class="icon-btn icon-btn-del" type="button" title="Delete" aria-label="Delete"
+                        data-url="{{ url_for('delete_order_route', order_no=o.order_no) }}"
+                        data-order="{{ o.order_no }}"
+                        onclick="doDelete(this)">
+                  <svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM7 9h2v10H7V9z"/></svg>
+                </button>
               </div>
             </td>
           </tr>
@@ -876,10 +875,23 @@ uploadForm.addEventListener('submit', function(e) {
 });
 
 /* ══════════════════════════════════════════════
-   CONFIRM DELETE (language-aware)
+   AJAX DELETE
 ══════════════════════════════════════════════ */
-function confirmDel(orderNo) {
-  return confirm('Delete order ' + orderNo + '?');
+function doDelete(btn) {
+  var orderNo = btn.dataset.order;
+  var url     = btn.dataset.url;
+  if (!confirm('Delete order ' + orderNo + '?')) return;
+  btn.disabled = true;
+  fetch(url, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!data.ok) { showFlash('error', 'Delete failed'); btn.disabled = false; return; }
+      var row = btn.closest('tr.row');
+      if (row) { var idx = allRows.indexOf(row); if (idx !== -1) allRows.splice(idx, 1); row.remove(); }
+      apply();
+      showFlash('success', 'Order ' + orderNo + ' deleted');
+    })
+    .catch(function() { showFlash('error', 'Delete failed'); btn.disabled = false; });
 }
 
 /* ══════════════════════════════════════════════
@@ -957,7 +969,7 @@ var isPend   = function(r) { var s = r.dataset.status||''; return !s||s==='PENDI
 var isStar   = function(r) { return r.dataset.star === '1'; };
 
 function updateCounts(searchFiltered) {
-  var cnt = {verde:0, rojo:0, pend:0, elim:0};
+  var cnt = {verde:0, rojo:0, pend:0};
   searchFiltered.forEach(function(r) {
     var g = r.dataset.grp;
     if (cnt[g] !== undefined) cnt[g]++;
@@ -966,7 +978,7 @@ function updateCounts(searchFiltered) {
   el = document.getElementById('cnt-verde'); if(el) el.textContent = '(' + cnt.verde + ')';
   el = document.getElementById('cnt-rojo');  if(el) el.textContent = '(' + cnt.rojo  + ')';
   el = document.getElementById('cnt-pend');  if(el) el.textContent = '(' + cnt.pend  + ')';
-  el = document.getElementById('cnt-elim');  if(el) el.textContent = '(' + cnt.elim  + ')';
+
 }
 
 function apply() {

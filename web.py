@@ -115,6 +115,13 @@ def create_app():
         identifier_value = (request.form.get("identifier_value") or "").strip()
         ls_id = (request.form.get("ls_id") or "").strip() or None
 
+        if not identifier_value:
+            flash("Identifier value is required (Trailer or Plates number).", "error")
+            return redirect(url_for("index"))
+        if not ls_id:
+            flash("Logistics Specialist is required.", "error")
+            return redirect(url_for("index"))
+
         try:
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
                 tmp_path = tmp.name
@@ -198,6 +205,8 @@ def create_app():
                         move_to_trash(p, TRASH_ROOT)
         except Exception:
             pass
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"ok": True})
         return redirect(url_for("index"))
 
     return app
