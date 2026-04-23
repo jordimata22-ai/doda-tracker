@@ -1,6 +1,9 @@
 [build]
 builder = "nixpacks"
 
+[phases.setup]
+aptPackages = ["libzbar0"]
+
 [deploy]
 startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --config gunicorn.conf.py"
 restartPolicyType = "on_failure"
